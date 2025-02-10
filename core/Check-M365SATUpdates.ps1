@@ -44,7 +44,7 @@ function Check-M365SATUpdates
 				$Updated = $False
 				
 				#Execute the Update365InspectPlus script from Github to download the new 
-				iex (New-Object Net.WebClient).DownloadString("https://raw.githubusercontent.com/karmakstylez/365inspectplus/master/UpdateM365SAT.ps1") #Download & Execute Update Script
+				Invoke-Expression (New-Object Net.WebClient).DownloadString("") #Download & Execute Update Script
 				stop-process -Id $PID #Stops current script to make sure update will not error
 			}
 			else
