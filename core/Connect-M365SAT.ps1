@@ -26,7 +26,7 @@ function Connect-M365SAT
 	[bool]$TeamsAuth = $false
 
 	# The new LoginByWam and LoginExperienceV2 does not work properly thus need to be disabled in order to function properly in PowerShell 5 and 7.
-	Set-AzConfig -EnableLoginByWam $false -LoginExperienceV2 'Off' #It will be enabled back once the audit is done.
+	Update-AzConfig -EnableLoginByWam $false -LoginExperienceV2 'Off' #It will be enabled back once the audit is done.
 
 	if ($PSVersionTable.PSVersion.Major -igt 5)
 		{
