@@ -66,13 +66,13 @@ function Audit-CISMEx133
 		}
 		else
 		{
-			$endobject = Build-CISMOff133 -ReturnedValue $affectedmailboxes.Count -Status "PASS" -RiskScore "0" -RiskRating "None"
+			$endobject = Build-CISMEx133 -ReturnedValue $affectedmailboxes.Count -Status "PASS" -RiskScore "0" -RiskRating "None"
 			Return $endobject
 		}
 	}
 	catch
 	{
-		$endobject = Build-CISMOff133 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
+		$endobject = Build-CISMEx133 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
 		return $endobject
