@@ -1,8 +1,4 @@
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
-# Purpose: Ensure that A Multi-factor Authentication Policy Exists for Administrative Groups
+# Benchmark: CIS Microsoft Azure v3.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -12,30 +8,37 @@ Import-Module PoShLog
 $path = @($OutPath)
 
 
-function Build-CISAz225($findings)
+function Build-CISAz225
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz225"
-		FindingName	     = "CIS Az 2.2.5 - No Multi-factor Authentication Policy Exists for All Users"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "15"
-		Description	     = "Enabling multi-factor authentication is a recommended setting to limit the potential of accounts being compromised and limiting access to authenticated personnel."
-		Remediation	     = "Please use the link described in the PowerShell Script to create an additional ConditionalAccessPolicy"
-		PowerShellScript = 'Unavailable'
-		DefaultValue	 = "null"
-		ExpectedValue    = "A policy"
-		ReturnedValue    = "$findings"
-		Impact		     = "3"
-		Likelihood	     = "5"
-		RiskRating	     = "High"
-		Priority		 = "High"
-		References	     = @(@{ 'Name' = 'Common Conditional Access policy: Require MFA for all users'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/howto-conditional-access-policy-all-users-mfa' },
-			@{ 'Name' = 'Troubleshooting Conditional Access using the What If tool'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/troubleshoot-conditional-access-what-if' },
-			@{ 'Name' = 'Conditional Access insights and reporting'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/howto-conditional-access-insights-reporting' },
-			@{ 'Name' = 'IM-7: Restrict resource access based on conditions'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-identity-management#im-7-restrict-resource-access-based-on--conditions' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz225"
+        ID               = "2.2.5"
+        Title            = "(L2) Ensure that A Multi-factor Authentication Policy Exists for All Users"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "Starting October 2024, MFA will be required for all accounts by default."
+        ExpectedValue    = "A Policy"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "Enforcing Multi-Factor Authentication (MFA) for all users helps prevent unauthorized access by requiring additional verification, reducing the risk of compromised credentials."
+        Impact           = "There is an increased cost, as Conditional Access policies require Microsoft Entra ID P1 or P2. Similarly, this may require additional overhead to maintain if users lose access to their MFA."
+        Remediation      = "Create a Conditional Access policy to enforce Multi-Factor Authentication (MFA) for all users through the Microsoft Entra admin portal."
+        References       = @(
+            @{ 'Name' = 'Common Conditional Access policy: Require MFA for all users'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/howto-conditional-access-policy-all-users-mfa' },
+            @{ 'Name' = 'Troubleshooting Conditional Access using the What If tool'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/troubleshoot-conditional-access-what-if' },
+            @{ 'Name' = 'Conditional Access insights and reporting'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/howto-conditional-access-insights-reporting' },
+            @{ 'Name' = 'IM-7: Restrict resource access based on conditions'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-identity-management#im-7-restrict-resource-access-based-on--conditions' }
+        )
+    }
+    return $inspectorobject
 }
 
 function Audit-CISAz225
@@ -67,15 +70,21 @@ function Audit-CISAz225
 
 		if ($Violation.Count -ne 0)
 		{
-			$finalobject = Build-CISAz225($Violation)
+			$finalobject = Build-CISAz225 -ReturnedValue ($Violation) -Status "FAIL" -RiskScore "15" -RiskRating "High"
 			return $finalobject
+		}else
+		{
+			$endobject = Build-CISAz225 -ReturnedValue "Conditional Access Policy defining Multi-factor Authentication Policy for All Users is enabled!" -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
+		$endobject = Build-CISAz225 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 return Audit-CISAz225

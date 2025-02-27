@@ -1,8 +1,4 @@
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
-# Purpose: Ensure that 'Multi-Factor Auth Status' is 'Enabled' for all Non-Privileged Users
+# Benchmark: CIS Microsoft Azure v3.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -11,29 +7,36 @@ Import-Module PoShLog
 #Call the OutPath Variable here
 $path = @($OutPath)
 
-function Build-CISAz213($findings)
+function Build-CISAz213
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz213"
-		FindingName	     = "CIS Az 2.1.3 - Multi-Factor Auth Status is 'Disabled' for some non-privileged Users"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "15"
-		Description	     = "Multi-factor authentication requires an individual to present a minimum of two separate forms of authentication before access is granted. Multi-factor authentication provides additional assurance that the individual attempting to gain access is who they claim to be. With multi-factor authentication, an attacker would need to compromise at least two different authentication mechanisms, increasing the difficulty of compromise and thus reducing the risk"
-		Remediation	     = "Please enable MFA for all users through the Admin Portal. You can also use the legacy script by Adminroid"
-		PowerShellScript = 'https://admindroid.sharepoint.com/:u:/s/external/EVzUDxQqxWdLj91v3mhAipsBt0GqNmUK5b4jFXPr181Svw?e=OOcfQn&isSPOFile=1'
-		DefaultValue	 = "All Users have no MFA Enabled"
-		ExpectedValue    = "All Users have MFA Enabled"
-		ReturnedValue    = "$findings Users have MFA Disabled"
-		Impact		     = "3"
-		Likelihood	     = "5"
-		RiskRating	     = "High"
-		Priority		 = "High"
-		References	     = @(@{ 'Name' = 'How it works: Microsoft Entra multifactor authentication'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-mfa-howitworks' },
-			@{ 'Name' = 'Enable per-user Microsoft Entra multifactor authentication to secure sign-in events'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/howto-mfa-userstates' },
-			@{ 'Name' = 'IM-4: Authenticate server and services'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-identity-management#im-4-authenticate-server-and-services' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz213"
+        ID               = "2.1.3"
+        Title            = "(L2) Ensure that 'Multi-Factor Auth Status' is 'Enabled' for all Non-Privileged Users"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "All Users have no MFA Enabled"
+        ExpectedValue    = "All Users have MFA Enabled"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "Multi-factor authentication requires an individual to present a minimum of two separate forms of authentication before access is granted. Multi-factor authentication provides additional assurance that the individual attempting to gain access is who they claim to be. With multi-factor authentication, an attacker would need to compromise at least two different authentication mechanisms, increasing the difficulty of compromise and thus reducing the risk."
+        Impact           = "Users would require two forms of authentication before any access is granted. Also, this requires an overhead for managing dual forms of authentication."
+        Remediation      = "Enable MFA for all users through the Admin Portal. Alternatively, use an appropriate script or automation tool to enforce MFA for non-privileged accounts."
+        References       = @(
+            @{ 'Name' = 'How it works: Microsoft Entra multifactor authentication'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-mfa-howitworks' },
+            @{ 'Name' = 'Enable per-user Microsoft Entra multifactor authentication to secure sign-in events'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/howto-mfa-userstates' },
+            @{ 'Name' = 'IM-4: Authenticate server and services'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-identity-management#im-4-authenticate-server-and-services' }
+        )
+    }
+    return $inspectorobject
 }
 
 function Audit-CISAz213
@@ -56,16 +59,23 @@ function Audit-CISAz213
 		# Validation
 		if ($affectedusers.count -gt 0)
 		{
-			$affectedusers | Format-Table -AutoSize | Out-File "$path\CISAz113UsersNonMFA.txt"
-			$finalobject = Build-CISAz213($affectedusers.Count)
-			return $finalobject
+			$SecureDefaultsState | Format-Table -AutoSize | Out-File "$path\CIS113UsersNonMFA.txt"
+			$endobject = Build-CISAz213 -ReturnedValue ($affectedusers.count) -Status "FAIL" -RiskScore "15" -RiskRating "High"
+			return $endobject
+		}
+		else
+		{
+			$endobject = Build-CISAz213 -ReturnedValue ($affectedusers.count) -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
+		$endobject = Build-CISAz213 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 

@@ -1,9 +1,5 @@
 #Requires -module Az.Accounts
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
-# Purpose: Ensure That 'Restrict access to Azure AD administration portal' is Set to 'Yes'
+# Benchmark: CIS Microsoft Azure v3.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -12,33 +8,40 @@ Import-Module PoShLog
 #Call the OutPath Variable here
 $path = @($OutPath)
 
-
-function Build-CISAz2018($findings)
+function Build-CISAz2018
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz2018"
-		FindingName	     = "CIS Az 2.18 - Restrict user ability to access groups features in the Access Pane is Set to 'No'"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "5"
-		Description	     = "Self-service group management enables users to create and manage security groups or Office 365 groups in Microsoft Entra ID. Unless a business requires this day-to-day delegation for some users, self-service group management should be disabled."
-		Remediation	     = "Change the Value to False to restrict non-admin users from accessing sensitive data. There is no automatic script available at this moment unfortunately."
-		PowerShellScript = 'https://portal.azure.com/#view/Microsoft_AAD_IAM/GroupsManagementMenuBlade/~/General'
-		DefaultValue	 = "True"
-		ExpectedValue    = "False"
-		ReturnedValue    = "$findings"
-		Impact		     = "1"
-		Likelihood	     = "5"
-		RiskRating	     = "Medium"
-		Priority		 = "Medium"
-		References	     = @(@{ 'Name' = 'Set up self-service group management in Microsoft Entra ID'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/users/groups-self-service-management' },
-			@{ 'Name' = 'PA-1: Separate and limit highly privileged/administrative users'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-privileged-access#pa-1-separate-and-limit-highly-privilegedadministrative-users' },
-			@{ 'Name' = 'PA-3: Manage lifecycle of identities and entitlements'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-privileged-access#pa-3-manage-lifecycle-of-identities-and-entitlements' },
-			@{ 'Name' = 'GS-2: Define and implement enterprise segmentation/separation of duties strategyment'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-2-define-and-implement-enterprise-segmentationseparation-of-duties-strategy' },
-			@{ 'Name' = 'GS-6: Define and implement identity and privileged access strategy'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-6-define-and-implement-identity-and-privileged-access-strategy' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz2018"
+        ID               = "2.18"
+        Title            = "(L2) Ensure that 'Restrict user ability to access groups features in the Access Pane' is Set to 'Yes'"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "True"
+        ExpectedValue    = "False"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "Self-service group management enables users to create and manage security groups or Microsoft 365 groups in Microsoft Entra ID. This feature allows non-admin users to control access to various resources. Unless a business explicitly requires this functionality, self-service group management should be disabled to prevent unauthorized privilege escalation or security misconfigurations."
+        Impact           = "Setting to Yes could create administrative overhead by customers seeking certain group memberships that will have to be manually managed by administrators with appropriate permissions."
+        Remediation      = "To mitigate this issue, set 'Restrict user ability to access groups features in My Groups' in the Microsoft Entra portal to 'Yes': https://portal.azure.com/#view/Microsoft_AAD_IAM/GroupsManagementMenuBlade/~/General"
+        References       = @(
+            @{ 'Name' = 'Set up self-service group management in Microsoft Entra ID'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/users/groups-self-service-management' },
+            @{ 'Name' = 'PA-1: Separate and limit highly privileged/administrative users'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-privileged-access#pa-1-separate-and-limit-highly-privilegedadministrative-users' },
+            @{ 'Name' = 'PA-3: Manage lifecycle of identities and entitlements'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-privileged-access#pa-3-manage-lifecycle-of-identities-and-entitlements' },
+            @{ 'Name' = 'GS-2: Define and implement enterprise segmentation/separation of duties strategy'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-2-define-and-implement-enterprise-segmentationseparation-of-duties-strategy' },
+            @{ 'Name' = 'GS-6: Define and implement identity and privileged access strategy'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-6-define-and-implement-identity-and-privileged-access-strategy' }
+        )
+    }
+    return $inspectorobject
 }
+#5medium
 
 function Audit-CISAz2018
 {
@@ -55,15 +58,22 @@ function Audit-CISAz2018
 		}
 		if ($AffectedOptions.count -igt 0)
 		{
-			$finalobject = Build-CISAz2018($AffectedOptions)
-			return $finalobject
+			$endobject = Build-CISAz2018 -ReturnedValue ($AffectedOptions) -Status "FAIL" -RiskScore "5" -RiskRating "Medium"
+			return $endobject
+		}
+		else
+		{
+			$endobject = Build-CISAz2018 -ReturnedValue "Restrict user ability to access groups features in the Access Panel is Set to : $($SsgmProperties.groupsInAccessPanelEnabled)" -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
+		$endobject = Build-CISAz2018 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 

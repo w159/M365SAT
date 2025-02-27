@@ -1,8 +1,4 @@
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
-# Purpose: Ensure That No Custom Subscription Administrator Roles Exist
+# Benchmark: CIS Microsoft Azure v3.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -11,33 +7,37 @@ Import-Module PoShLog
 #Call the OutPath Variable here
 $path = @($OutPath)
 
-
-function Build-CISAz2023($findings)
+function Build-CISAz2023
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz2023"
-		FindingName	     = "CIS Az 2.23 - Custom Subscription Administrator Roles Exist"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "5"
-		Description	     = "Classic subscription admin roles offer basic access management and include Account Administrator, Service Administrator, and Co-Administrators. It is recommended the least necessary permissions be given initially. Permissions can be added as needed by the account holder. This ensures the account holder cannot perform actions which were not intended."
-		Remediation	     = "Use the Azure CloudShell Script to enable Security Defaults on Microsoft Azure Active Directory"
-		PowerShellScript = 'az role definition delete --name <role name>'
-		DefaultValue	 = "0"
-		ExpectedValue    = "0"
-		ReturnedValue    = "$findings"
-		Impact		     = "1"
-		Likelihood	     = "5"
-		RiskRating	     = "Medium"
-		Priority		 = "Medium"
-		References	     = @(@{ 'Name' = 'Add or change Azure subscription administrators'; 'URL' = 'https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/add-change-subscription-administrator' },
-		@{ 'Name' = 'PA-1: Separate and limit highly privileged/administrative users'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-privileged-access#pa-1-separate-and-limit-highly-privilegedadministrative-users' },
-		@{ 'Name' = 'PA-3: Manage lifecycle of identities and entitlements'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-privileged-access#pa-3-manage-lifecycle-of-identities-and-entitlements' },
-		@{ 'Name' = 'GS-2: Define and implement enterprise segmentation/separation of duties strategyment'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-2-define-and-implement-enterprise-segmentationseparation-of-duties-strategy' },
-		@{ 'Name' = 'GS-6: Define and implement identity and privileged access strategy'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-6-define-and-implement-identity-and-privileged-access-strategy' },
-		@{ 'Name' = 'PA-7: Follow just enough administration (least privilege) principle'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-privileged-access#pa-7-follow-just-enough-administration-least-privilege-principle' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz2023"
+        ID               = "2.23"
+        Title            = "(L1) Ensure That No Custom Subscription Administrator Roles Exist"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "0 (No Custom Roles)"
+        ExpectedValue    = "0 (No Custom Roles)"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "Classic subscription administrator roles, such as Account Administrator, Service Administrator, and Co-Administrator, provide broad permissions. It is recommended to limit permissions to only what is necessary and avoid custom subscription administrator roles to prevent excessive access."
+        Impact           = "Subscriptions will need to be handled by Administrators with permissions."
+        Remediation      = "To remove custom subscription administrator roles: Remove-MgRoleManagementDirectoryRoleDefinition -RoleDefinitionId '<Role Definition ID>"
+        References       = @(
+            @{ 'Name' = 'Add or change Azure subscription administrators'; 'URL' = 'https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/add-change-subscription-administrator' },
+            @{ 'Name' = 'PA-1: Separate and limit highly privileged/administrative users'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-privileged-access#pa-1-separate-and-limit-highly-privilegedadministrative-users' },
+            @{ 'Name' = 'PA-3: Manage lifecycle of identities and entitlements'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-privileged-access#pa-3-manage-lifecycle-of-identities-and-entitlements' },
+            @{ 'Name' = 'PA-7: Follow just enough administration (least privilege) principle'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-privileged-access#pa-7-follow-just-enough-administration-least-privilege-principle' }
+        )
+    }
+    return $inspectorobject
 }
 
 function Audit-CISAz2023
@@ -54,15 +54,22 @@ function Audit-CISAz2023
 			{
 				$CustomSubscriptionAdministratorRoleList += $Role.Name
 			}
-			$finalobject = Build-CISAz2023($CustomSubscriptionAdministratorRoleList)
-			return $finalobject
+			$endobject = Build-CISAz2023 -ReturnedValue ($CustomSubscriptionAdministratorRoleList) -Status "FAIL" -RiskScore "5" -RiskRating "Medium"
+			return $endobject
+		}
+		else
+		{
+			$endobject = Build-CISAz2023 -ReturnedValue ($SecureDefaultsState.isEnabled) -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
+		$endobject = Build-CISAz2023 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 return Audit-CISAz2023

@@ -1,9 +1,5 @@
 #Requires -module Az.Accounts
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
-# Purpose: Ensure that account 'Lockout Threshold' is less than or equal to '10'
+# Benchmark: CIS Microsoft Azure v3.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -13,29 +9,35 @@ Import-Module PoShLog
 $path = @($OutPath)
 
 
-function Build-CISAz27($findings)
+function Build-CISAz27
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz27"
-		FindingName	     = "CIS Az 2.7 - Account 'Lockout Threshold' is not less than or equal to '10'"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "3"
-		Description	     = "Account lockout is a method of protecting against brute-force and password spray attacks. Once the lockout threshold has been exceeded, the account enters a locked-out state which prevents all login attempts for a variable duration. The lockout in combination with a reasonable duration reduces the total number of failed login attempts that a malicious actor can execute in a given period of time."
-		Remediation	     = "Manually change the value in the Azure Portal. There is no script available at this moment unfortunately."
-		PowerShellScript = 'https://portal.azure.com/#view/Microsoft_AAD_IAM/AuthenticationMethodsMenuBlade/~/PasswordProtection'
-		DefaultValue	 = "10"
-		ExpectedValue    = "2"
-		ReturnedValue    = "$findings"
-		Impact		     = "3"
-		Likelihood	     = "1"
-		RiskRating	     = "Low"
-		Priority		 = "High"
-		References	     = @(@{ 'Name' = 'Manage Microsoft Entra smart lockout values'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/howto-password-smart-lockout#manage-microsoft-entra-smart-lockout-values' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz27"
+        ID               = "2.7"
+        Title            = "(L1) Ensure that account 'Lockout duration in seconds' is greater than or equal to '60'"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "60 seconds"
+        ExpectedValue    = "≤60 seconds"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "Account lockout is a method of protecting against brute-force and password spray attacks. Once the lockout threshold has been exceeded, the account enters a locked-out state which prevents all login attempts for a variable duration. The lockout in combination with a reasonable duration reduces the total number of failed login attempts that a malicious actor can execute in a given period of time."
+        Impact           = "If account lockout duration is set too low (less than 60 seconds), malicious actors can perform more password spray and brute-force attempts over a given period of time. If the account lockout duration is set too high (more than 300 seconds) users may experience inconvenient delays during lockout."
+        Remediation      = "Manually adjust the lockout duration in the Azure Portal via the following link: `https://portal.azure.com/#view/Microsoft_AAD_IAM/AuthenticationMethodsMenuBlade/~/PasswordProtection`. There is no PowerShell script available to automate this change at this time."
+        References       = @(
+            @{ 'Name' = 'Manage Microsoft Entra smart lockout values'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/howto-password-smart-lockout#manage-microsoft-entra-smart-lockout-values' }
+        )
+    }
+    return $inspectorobject
 }
-
 function Audit-CISAz27
 {
 	try
@@ -45,16 +47,22 @@ function Audit-CISAz27
 		# Validation
 		if ($MethodsRequired.lockoutDurationInSeconds -ilt 60)
 		{
-			$finalobject = Build-CISAz27($MethodsRequired.lockoutDurationInSeconds)
-			return $finalobject
+			$endobject = Build-CISAz27 -ReturnedValue ($MethodsRequired.lockoutDurationInSeconds) -Status "FAIL" -RiskScore "3" -RiskRating "Low"
+			return $endobject
+		}
+		else
+		{
+			$endobject = Build-CISAz27 -ReturnedValue ($MethodsRequired.lockoutDurationInSeconds) -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
-		
 	}
 	catch
 	{
+		$endobject = Build-CISAz27 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 

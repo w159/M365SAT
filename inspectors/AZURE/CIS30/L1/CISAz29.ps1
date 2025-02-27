@@ -1,9 +1,5 @@
 #Requires -module Az.Accounts
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
-# Purpose: Ensure that 'Number of days before users are asked to re-confirm their authentication information' is not set to '0'
+# Benchmark: CIS Microsoft Azure v3.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -13,30 +9,36 @@ Import-Module PoShLog
 $path = @($OutPath)
 
 
-function Build-CISAz29($findings)
+function Build-CISAz29
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz29"
-		FindingName	     = "CIS Az 2.9 - Number of days before users are asked to re-confirm their authentication information is set to '0'"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "3"
-		Description	     = "This setting is necessary if you have setup 'Require users to register when signing in option'. If authentication re-confirmation is disabled, registered users will never be prompted to re-confirm their existing authentication information. If the authentication information for a user changes, such as a phone number or email, then the password reset information for that user reverts to the previously registered authentication information."
-		Remediation	     = "Manually change the value from 0 to something else e.g. 180. There is no script available at this moment unfortunately."
-		PowerShellScript = 'https://portal.azure.com/#view/Microsoft_AAD_IAM/PasswordResetMenuBlade/~/Registration'
-		DefaultValue	 = "180"
-		ExpectedValue    = "More than 0"
-		ReturnedValue    = "$findings"
-		Impact		     = "3"
-		Likelihood	     = "1"
-		RiskRating	     = "Low"
-		Priority		 = "Medium"
-		References	     = @(@{ 'Name' = 'How it works: Azure AD self-service password reset'; 'URL' = 'https://learn.microsoft.com/en-us/azure/active-directory/authentication/concept-sspr-howitworks#registration' },
-			@{ 'Name' = 'Reset your work or school password using security info'; 'URL' = 'https://support.microsoft.com/en-us/account-billing/reset-your-work-or-school-password-using-security-info-23dde81f-08bb-4776-ba72-e6b72b9dda9e' },
-			@{ 'Name' = 'GS-6: Define and implement identity and privileged access strategy'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-6-define-and-implement-identity-and-privileged-access-strategy' },
-			@{ 'Name' = 'What authentication and verification methods are available in Azure Active Directory?'; 'URL' = 'https://learn.microsoft.com/en-us/azure/active-directory/authentication/concept-authentication-methods' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz29"
+        ID               = "2.9"
+        Title            = "(L1) Ensure that 'Number of days before users are asked to re-confirm their authentication information' is not set to '0'"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "180"
+        ExpectedValue    = "More than 0"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "If authentication re-confirmation is disabled, registered users will never be prompted to re-confirm their existing authentication information. If their phone number or email changes, password reset information will still use the previously registered details, potentially allowing unauthorized access."
+        Impact           = "Users will be prompted for their multifactor authentication at the duration set here."
+        Remediation      = "Manually update the value from '0' to a recommended period (e.g., 180 days) in the Azure Portal via `https://portal.azure.com/#view/Microsoft_AAD_IAM/PasswordResetMenuBlade/~/Registration`. No PowerShell script is available at this time."
+        References       = @(
+            @{ 'Name' = 'How it works: Microsoft Entra self-service password reset'; 'URL' = 'https://learn.microsoft.com/en-us/azure/active-directory/authentication/concept-sspr-howitworks#registration' },
+            @{ 'Name' = 'Reset your work or school password using security info'; 'URL' = 'https://support.microsoft.com/en-us/account-billing/reset-your-work-or-school-password-using-security-info-23dde81f-08bb-4776-ba72-e6b72b9dda9e' },
+            @{ 'Name' = 'GS-6: Define and implement identity and privileged access strategy'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-6-define-and-implement-identity-and-privileged-access-strategy' }
+        )
+    }
+    return $inspectorobject
 }
 
 function Audit-CISAz29
@@ -54,15 +56,22 @@ function Audit-CISAz29
 		}
 		if ($AffectedOptions.count -igt 0)
 		{
-			$finalobject = Build-CISAz29($AffectedOptions)
-			return $finalobject
+			$endobject = Build-CISAz29 -ReturnedValue ($AffectedOptions) -Status "FAIL" -RiskScore "3" -RiskRating "Low"
+			return $endobject
+		}
+		else
+		{
+			$endobject = Build-CISAz29 -ReturnedValue ("Number of days before users are asked to re-confirm their authentication information: $($MethodsRequired.registrationReconfirmIntevalInDays)") -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
+		$endobject = Build-CISAz29 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 

@@ -1,9 +1,5 @@
 #Requires -module Az.Accounts
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
-# Purpose: Ensure that a Custom Bad Password List is set to 'Enforce' for your Organization
+# Benchmark: CIS Microsoft Azure v3.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -12,32 +8,36 @@ Import-Module PoShLog
 #Call the OutPath Variable here
 $path = @($OutPath)
 
-function Build-CISAz28($findings)
+function Build-CISAz28
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz28"
-		FindingName	     = "CIS Az 2.8 - No Custom Bad Password List is set to 'Enforce' for your Organization"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "5"
-		Description	     = "Enabling this gives your organization further customization on what secure passwords are allowed. Setting a bad password list enables your organization to fine-tune its password policy further, depending on your needs. Removing easy-to-guess passwords increases the security of access to your Azure resources"
-		Remediation	     = "Manually enable Enforce custom list and set it to True. There is no script available at this moment unfortunately."
-		PowerShellScript = 'https://portal.azure.com/#view/Microsoft_AAD_IAM/AuthenticationMethodsMenuBlade/~/PasswordProtection'
-		DefaultValue	 = "False + No List"
-		ExpectedValue    = "True + List with passwords"
-		ReturnedValue    = "$findings"
-		Impact		     = "1"
-		Likelihood	     = "5"
-		RiskRating	     = "Medium"
-		Priority		 = "Medium"
-		References	     = @(@{ 'Name' = 'Combined password policy and check for weak passwords in Microsoft Entra ID'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-password-ban-bad-combined-policy' },
-			@{ 'Name' = 'Eliminate bad passwords using Microsoft Entra Password Protection'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-password-ban-bad' },
-			@{ 'Name' = 'AzureAD PowerShell Module'; 'URL' = 'https://learn.microsoft.com/en-us/powershell/module/Azuread/?view=azureadps-2.0' },
-			@{ 'Name' = 'Password Guidance'; 'URL' = 'https://www.microsoft.com/en-us/research/publication/password-guidance/' },
-			@{ 'Name' = 'Tutorial: Configure custom banned passwords for Microsoft Entra password protection'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-configure-custom-password-protection' },
-			@{ 'Name' = 'IM-6: Use strong authentication controls'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-identity-management#im-6-use-strong-authentication-controls' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz28"
+        ID               = "2.8"
+        Title            = "(L1) Ensure that a Custom Bad Password List is set to 'Enforce' for your Organization"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "By default the custom bad password list is not 'Enabled'"
+        ExpectedValue    = "True (List with passwords)"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "Enforcing a custom banned password list allows organizations to block commonly used or easily guessable passwords. This strengthens password security by preventing weak credentials that attackers could exploit."
+        Impact           = "Increasing needed password complexity might increase overhead on administration of user accounts. Licensing requirement for Global Banned Password List and Custom Banned Password list requires Microsoft Entra ID P1 or P2. On-premises Active Directory Domain Services users that are not synchronized to Microsoft Entra ID also benefit from Microsoft Entra ID Password Protection based on existing licensing for synchronized users."
+        Remediation      = "Manually enable 'Enforce Custom List' and configure banned passwords via the following link: `https://portal.azure.com/#view/Microsoft_AAD_IAM/AuthenticationMethodsMenuBlade/~/PasswordProtection`. No PowerShell script is available at this time."
+        References       = @(
+            @{ 'Name' = 'Combined password policy and check for weak passwords in Microsoft Entra ID'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-password-ban-bad-combined-policy' },
+            @{ 'Name' = 'Eliminate bad passwords using Microsoft Entra Password Protection'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-password-ban-bad' },
+            @{ 'Name' = 'Tutorial: Configure custom banned passwords for Microsoft Entra password protection'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-configure-custom-password-protection' }
+        )
+    }
+    return $inspectorobject
 }
 
 function Audit-CISAz28
@@ -66,15 +66,22 @@ function Audit-CISAz28
 		}
 		if ($AffectedOptions.count -igt 0)
 		{
-			$finalobject = Build-CISAz28($AffectedOptions)
-			return $finalobject
+			$finalobject = Build-CISAz28 -ReturnedValue ($AffectedOptions) -Status "FAIL" -RiskScore "5" -RiskRating "Medium"
+			return $endobject
+		}
+		else
+		{
+			$endobject = Build-CISAz28 -ReturnedValue ("Password Policy has no anomalies!") -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
+		$endobject = Build-CISAz28 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 

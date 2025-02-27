@@ -1,8 +1,4 @@
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
-# Purpose: Ensure Multi-factor Authentication is Required for Risky Sign-ins
+# Benchmark: CIS Microsoft Azure v3.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -12,31 +8,38 @@ Import-Module PoShLog
 $path = @($OutPath)
 
 
-function Build-CISAz226($findings)
+function Build-CISAz226
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz226"
-		FindingName	     = "CIS Az 2.2.6 - No Multi-factor Authentication Policy Exists for Risky Sign-ins"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "15"
-		Description	     = "Enabling multi-factor authentication is a recommended setting to limit the potential of accounts being compromised and limiting access to authenticated personnel. Enabling this policy allows Entra ID's risk-detection mechanisms to force additional scrutiny on the login event, providing a deterrent response to potentially malicious sign-in events, and adding an additional authentication layer as a reaction to potentially malicious behavior."
-		Remediation	     = "Please use the link described in the PowerShell Script to create an additional ConditionalAccessPolicy"
-		PowerShellScript = 'Unavailable'
-		DefaultValue	 = "null"
-		ExpectedValue    = "A policy"
-		ReturnedValue    = "$findings"
-		Impact		     = "3"
-		Likelihood	     = "5"
-		RiskRating	     = "High"
-		Priority		 = "High"
-		References	     = @(@{ 'Name' = 'Common Conditional Access policy: Sign-in risk-based multifactor authentication'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/howto-conditional-access-policy-risk' },
-			@{ 'Name' = 'Troubleshooting Conditional Access using the What If tool'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/troubleshoot-conditional-access-what-if' },
-			@{ 'Name' = 'Conditional Access insights and reporting'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/howto-conditional-access-insights-reporting' },
-			@{ 'Name' = 'IM-7: Restrict resource access based on conditions'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-identity-management#im-7-restrict-resource-access-based-on--conditions' },
-			@{ 'Name' = 'License requirements'; 'URL' = 'https://learn.microsoft.com/en-us/entra/id-protection/overview-identity-protection#license-requirements' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz226"
+        ID               = "2.2.6"
+        Title            = "(L2) Ensure Multi-factor Authentication is Required for Risky Sign-ins"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "No Policy"
+        ExpectedValue    = "A Policy"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "Requiring Multi-Factor Authentication (MFA) for risky sign-ins enhances security by enforcing additional verification when Microsoft Entra ID detects potentially compromised login attempts."
+        Impact           = "Risk Policies for Conditional Access require Microsoft Entra ID P2. Additional overhead to support or maintain these policies may also be required if users lose access to their MFA tokens."
+        Remediation      = "Configure a Conditional Access policy in the Microsoft Entra admin portal to enforce MFA for risky sign-ins."
+        References       = @(
+            @{ 'Name' = 'Common Conditional Access policy: Sign-in risk-based multifactor authentication'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/howto-conditional-access-policy-risk' },
+            @{ 'Name' = 'Troubleshooting Conditional Access using the What If tool'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/troubleshoot-conditional-access-what-if' },
+            @{ 'Name' = 'Conditional Access insights and reporting'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/howto-conditional-access-insights-reporting' },
+            @{ 'Name' = 'IM-7: Restrict resource access based on conditions'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-identity-management#im-7-restrict-resource-access-based-on--conditions' },
+            @{ 'Name' = 'License requirements'; 'URL' = 'https://learn.microsoft.com/en-us/entra/id-protection/overview-identity-protection#license-requirements' }
+        )
+    }
+    return $inspectorobject
 }
 
 function Audit-CISAz226
@@ -68,15 +71,21 @@ function Audit-CISAz226
 		# Validation
 		if ($Violation.Count -ne 0)
 		{
-			$finalobject = Build-CISAz226($Violation)
+			$finalobject = Build-CISAz226 -ReturnedValue ($Violation) -Status "FAIL" -RiskScore "15" -RiskRating "High"
 			return $finalobject
+		}else
+		{
+			$endobject = Build-CISAz226 -ReturnedValue "Conditional Access Policy defining Multi-factor Authentication Policy for Risky Users is enabled!" -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
+		$endobject = Build-CISAz226 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 return Audit-CISAz226

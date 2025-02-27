@@ -1,8 +1,4 @@
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
-# Purpose: Ensure That 'Subscription Entering AAD Directory' and 'Subscription Leaving AAD Directory' Is Set To 'Permit No One'
+# Benchmark: CIS Microsoft Azure v3.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -11,31 +7,38 @@ Import-Module PoShLog
 #Call the OutPath Variable here
 $path = @($OutPath)
 
-
-function Build-CISAz2025($findings)
+function Build-CISAz2025
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz2025"
-		FindingName	     = "CIS Az 2.25 - 'Subscription leaving Microsoft Entra tenant' and 'Subscription entering Microsoft Entra tenant' Are Set to Everyone!"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "10"
-		Description	     = "Permissions to move subscriptions in and out of a Microsoft Entra tenant must only be given to appropriate administrative personnel. A subscription that is moved into a Microsoft Entra tenant may be within a folder to which other users have elevated permissions. This prevents loss of data or unapproved changes of the objects within by potential bad actors."
-		Remediation	     = "Navigate to the URL in the PowerShell script to remediate this issue."
-		PowerShellScript = 'https://portal.azure.com/#view/Microsoft_Azure_SubscriptionManagement/ManageSubscriptionPoliciesBlade'
-		DefaultValue	 = "False"
-		ExpectedValue    = "True"
-		ReturnedValue    = "$findings"
-		Impact		     = "2"
-		Likelihood	     = "5"
-		RiskRating	     = "High"
-		Priority		 = "High"
-		References	     = @(@{ 'Name' = 'Manage Azure subscription policies'; 'URL' = 'https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/manage-azure-subscription-policy' },
-			@{ 'Name' = 'Associate or add an Azure subscription to your Microsoft Entra tenant'; 'URL' = 'https://learn.microsoft.com/en-us/entra/fundamentals/how-subscriptions-associated-directory' },
-			@{ 'Name' = 'IM-2: Protect identity and authentication systems'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-identity-management#im-2-protect-identity-and-authentication-systems' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz2025"
+        ID               = "2.25"
+        Title            = "(L2) Ensure That 'Subscription leaving Microsoft Entra tenant' and 'Subscription entering Microsoft Entra tenant' Is Set To 'Permit no one'"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "False (Access granted to Everyone)"
+        ExpectedValue    = "True (Restricted to Admins)"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "Permissions to move subscriptions in and out of a Microsoft Entra tenant must only be granted to appropriate administrative personnel. If unrestricted, a subscription could be moved into a Microsoft Entra tenant where other users have elevated permissions, increasing the risk of unauthorized modifications or data loss."
+        Impact           = "Subscriptions will need to have these settings turned off to be moved."
+        Remediation      = "To restrict subscription movement ensure 'Subscription leaving Microsoft Entra tenant and Subscription entering Microsoft Entra tenant' are set to 'Permit no one' here: https://portal.azure.com/#view/Microsoft_Azure_SubscriptionManagement/ManageSubscriptionPoliciesBlade"
+        References       = @(
+            @{ 'Name' = 'Manage Azure subscription policies'; 'URL' = 'https://learn.microsoft.com/en-us/azure/cost-management-billing/manage/manage-azure-subscription-policy' },
+            @{ 'Name' = 'Associate or add an Azure subscription to your Microsoft Entra tenant'; 'URL' = 'https://learn.microsoft.com/en-us/entra/fundamentals/how-subscriptions-associated-directory' },
+            @{ 'Name' = 'IM-2: Protect identity and authentication systems'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-identity-management#im-2-protect-identity-and-authentication-systems' }
+        )
+    }
+    return $inspectorobject
 }
+#10high
 
 function Audit-CISAz2025
 {
@@ -57,15 +60,22 @@ function Audit-CISAz2025
 		
 		if ($SubscriptionSettings.Count -igt 0)
 		{
-			$finalobject = Build-CISAz2025($SubscriptionSettings)
-			return $finalobject
+			$endobject = Build-CISAz2025 -ReturnedValue ($SubscriptionSettings) -Status "FAIL" -RiskScore "10" -RiskRating "High"
+			return $endobject
+		}
+		else
+		{
+			$endobject = Build-CISAz2025 -ReturnedValue ("blockSubscriptionsLeavingTenant: $($Setting1) blockSubscriptionsIntoTenant: $($Setting2)") -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
+		$endobject = Build-CISAz2025 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 return Audit-CISAz2025

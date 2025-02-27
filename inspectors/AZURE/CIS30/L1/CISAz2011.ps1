@@ -1,9 +1,5 @@
 #Requires -module Az.Accounts
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
-# Purpose: Ensure That 'Notify all admins when other admins reset their password?' is set to 'Yes'
+# Benchmark: CIS Microsoft Azure v3.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -12,33 +8,40 @@ Import-Module PoShLog
 #Call the OutPath Variable here
 $path = @($OutPath)
 
-
-function Build-CISAz2011($findings)
+function Build-CISAz2011
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz2011"
-		FindingName	     = "CIS Az 2.11 - Notify all admins when other admins reset their password?' is set to 'No'"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "15"
-		Description	     = "Global Administrator accounts are sensitive. Any password reset activity notification, when sent to all Global Administrators, ensures that all Global administrators can passively confirm if such a reset is a common pattern within their group. For example, if all Global Administrators change their password every 30 days, any password reset activity before that may require administrator(s) to evaluate any unusual activity and confirm its origin."
-		Remediation	     = "Change the value manually. There is no automatic script available at this moment unfortunately."
-		PowerShellScript = 'https://portal.azure.com/#view/Microsoft_AAD_IAM/PasswordResetMenuBlade/~/Notifications'
-		DefaultValue	 = "False"
-		ExpectedValue    = "True"
-		ReturnedValue    = "$findings"
-		Impact		     = "3"
-		Likelihood	     = "5"
-		RiskRating	     = "High"
-		Priority		 = "High"
-		References	     = @(@{ 'Name' = 'Notifications'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks#notifications' },
-			@{ 'Name' = 'Reset your work or school password using security info'; 'URL' = 'https://support.microsoft.com/en-us/account-billing/reset-your-work-or-school-password-using-security-info-23dde81f-08bb-4776-ba72-e6b72b9dda9e' },
-			@{ 'Name' = 'GS-6: Define and implement identity and privileged access strategy'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-6-define-and-implement-identity-and-privileged-access-strategy' },
-			@{ 'Name' = 'PA-1: Separate and limit highly privileged/administrative users'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-privileged-access#pa-1-separate-and-limit-highly-privilegedadministrative-users' },
-			@{ 'Name' = 'Set up notifications and customizations'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr#set-up-notifications-and-customizations' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz2011"
+        ID               = "2.11"
+        Title            = "(L1) Ensure That 'Notify all admins when other admins reset their password?' is set to 'Yes'"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "False"
+        ExpectedValue    = "True"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "Global Administrator accounts are highly privileged and require extra security monitoring. Enabling notifications for admin password resets helps detect unauthorized or unusual activity early."
+        Impact           = "All Global Administrators will receive a notification from Azure every time a password is reset. This is useful for auditing procedures to confirm that there are no out of the ordinary password resets for Administrators. There is additional overhead, however, in the time required for Global Administrators to audit the notifications. This setting is only useful if all Global Administrators pay attention to the notifications and audit each one."
+        Remediation      = "Enable the setting 'Notify all admins when other admins reset their password' in the Azure Portal via `https://portal.azure.com/#view/Microsoft_AAD_IAM/PasswordResetMenuBlade/~/Notifications`. No PowerShell script is available at this time."
+        References       = @(
+            @{ 'Name' = 'Notifications in Self-Service Password Reset'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks#notifications' },
+            @{ 'Name' = 'Reset your work or school password using security info'; 'URL' = 'https://support.microsoft.com/en-us/account-billing/reset-your-work-or-school-password-using-security-info-23dde81f-08bb-4776-ba72-e6b72b9dda9e' },
+            @{ 'Name' = 'GS-6: Define and implement identity and privileged access strategy'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-6-define-and-implement-identity-and-privileged-access-strategy' },
+            @{ 'Name' = 'PA-1: Separate and limit highly privileged/administrative users'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-privileged-access#pa-1-separate-and-limit-highly-privilegedadministrative-users' },
+            @{ 'Name' = 'Set up notifications and customizations'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr#set-up-notifications-and-customizations' }
+        )
+    }
+    return $inspectorobject
 }
+#15 high
 
 function Audit-CISAz2011
 {
@@ -56,15 +59,22 @@ function Audit-CISAz2011
 		}
 		if ($AffectedOptions.count -igt 0)
 		{
-			$finalobject = Build-CISAz2011($AffectedOptions)
-			return $finalobject
+			$endobject = Build-CISAz2011 -ReturnedValue ($AffectedOptions) -Status "FAIL" -RiskScore "15" -RiskRating "High"
+			return $endobject
+		}
+		else
+		{
+			$endobject = Build-CISAz211 -ReturnedValue ("Notify all admins when other admins reset their password? is set to: $($MethodsRequired.notifyOnAdminPasswordReset)") -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
+		$endobject = Build-CISAz211 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 

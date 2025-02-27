@@ -1,7 +1,4 @@
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
+# Benchmark: CIS Microsoft Azure v3.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -10,30 +7,37 @@ Import-Module PoShLog
 #Call the OutPath Variable here
 $path = @($OutPath)
 
-
-function Build-CISAz3142($findings)
+function Build-CISAz3142
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz3142"
-		FindingName	     = "CIS Az 3.1.4.2 - 'Agentless discovery for Kubernetes' component status is set to 'Off'"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "2"
-		Description	     = "As with any compute resource, Container environments require hardening and run-time protection to ensure safe operations and detection of threats and vulnerabilities."
-		Remediation	     = "Navigate to the PowerShellScript link, select the subscription and under Settings & Monitoring toggle Agentless discovery for Kubernetes to On."
-		PowerShellScript = 'https://portal.azure.com/#view/Microsoft_Azure_Security/SecurityMenuBlade/~/EnvironmentSettings'
-		DefaultValue	 = "False"
-		ExpectedValue    = "True"
-		ReturnedValue    = "$findings"
-		Impact		     = "2"
-		Likelihood	     = "1"
-		RiskRating	     = "Low"
-		Priority		 = "Low"
-		References	     = @(@{ 'Name' = 'Overview-Container protection in Defender for Cloud'; 'URL' = 'https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-containers-introduction' },
-		@{ 'Name' = 'IR-2: Preparation - setup incident notification'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-incident-response#ir-2-preparation---setup-incident-notification' },
-		@{ 'Name' = 'How does Defender for Cloud collect data?'; 'URL' = 'https://learn.microsoft.com/en-us/azure/defender-for-cloud/monitoring-components?tabs=autoprovision-containers' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz3142"
+        ID               = "3.1.4.2"
+        Title            = "(L2) Ensure that 'Agentless discovery for Kubernetes' component status 'On'"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "False"
+        ExpectedValue    = "True"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "As with any compute resource, containerized environments require hardening and runtime protection to ensure safe operations, threat detection, and vulnerability identification. Enabling 'Agentless Discovery for Kubernetes' allows Microsoft Defender for Cloud to analyze configurations, detect risks, and provide insights without requiring direct agent installations."
+        Impact           = "Endpoint protection requires additional licensing E.g. Defender for Servers plan CSPM or Defender for Containers plans."
+        Remediation      = 'To enable Agentless Discovery for Kubernetes:Set-AzSecurityPricing -Name "CloudPosture" -PricingTier "Standard" -Extension "[{"name":"AgentlessDiscoveryForKubernetes","isEnabled":"True","additionalExtensionProperties":null}]"'
+        References       = @(
+            @{ 'Name' = 'Overview - Container protection in Defender for Cloud'; 'URL' = 'https://learn.microsoft.com/en-us/azure/defender-for-cloud/defender-for-containers-introduction' },
+            @{ 'Name' = 'IR-2: Preparation - setup incident notification'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-incident-response#ir-2-preparation---setup-incident-notification' },
+            @{ 'Name' = 'How does Defender for Cloud collect data?'; 'URL' = 'https://learn.microsoft.com/en-us/azure/defender-for-cloud/monitoring-components?tabs=autoprovision-containers' }
+        )
+    }
+    return $inspectorobject
 }
 
 function Audit-CISAz3142
@@ -46,14 +50,22 @@ function Audit-CISAz3142
 		
 		if ($Settings.isEnabled -eq 'False')
 		{
-			$finalobject = Build-CISAz3142("False")
-			return $finalobject
+			$endobject = Build-CISAz3142 -ReturnedValue ($Settings.isEnabled) -Status "FAIL" -RiskScore "2" -RiskRating "Low"
+			return $endobject
 		}
+		else
+		{
+			$endobject = Build-CISAz3142 -ReturnedValue ($Settings.isEnabled) -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
+		}
+		return $null
 	}
 	catch
 	{
+		$endobject = Build-CISAz3142 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 return Audit-CISAz3142

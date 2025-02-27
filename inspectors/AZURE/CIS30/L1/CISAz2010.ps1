@@ -1,9 +1,5 @@
 #Requires -module Az.Accounts
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
-# Purpose: Ensure that 'Notify users on password resets?' is set to 'Yes'
+# Benchmark: CIS Microsoft Azure v3.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -13,30 +9,37 @@ Import-Module PoShLog
 $path = @($OutPath)
 
 
-function Build-CISAz2010($findings)
+function Build-CISAz2010
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz2010"
-		FindingName	     = "CIS Az 2.10 - 'Notify users on password resets?' is set to 'No'"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "4"
-		Description	     = "User notification on password reset is a proactive way of confirming password reset activity. It helps the user to recognize unauthorized password reset activities."
-		Remediation	     = "Change the value back to True to be compliant again. There is no automatic script available at this moment unfortunately."
-		PowerShellScript = 'https://portal.azure.com/#view/Microsoft_AAD_IAM/PasswordResetMenuBlade/~/Notifications'
-		DefaultValue	 = "True"
-		ExpectedValue    = "True"
-		ReturnedValue    = "$findings"
-		Impact		     = "4"
-		Likelihood	     = "1"
-		RiskRating	     = "Medium"
-		Priority		 = "High"
-		References	     = @(@{ 'Name' = 'Set up notifications and customizations'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr#set-up-notifications-and-customizations' },
-			@{ 'Name' = 'Notifications'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks#notifications' },
-			@{ 'Name' = 'Reset your work or school password using security info'; 'URL' = 'https://support.microsoft.com/en-us/account-billing/reset-your-work-or-school-password-using-security-info-23dde81f-08bb-4776-ba72-e6b72b9dda9e' },
-			@{ 'Name' = 'GS-6: Define and implement identity and privileged access strategy'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-6-define-and-implement-identity-and-privileged-access-strategy' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz2010"
+        ID               = "2.10"
+        Title            = "(L1) Ensure that 'Notify users on password resets?' is set to 'Yes'"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "True"
+        ExpectedValue    = "True"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "User notifications on password resets help users detect unauthorized reset attempts, providing an extra layer of security against account takeovers."
+        Impact           = "Users will receive emails alerting them to password changes to both their primary and alternate emails."
+        Remediation      = "Enable the setting 'Notify users on password resets' in the Azure Portal via `https://portal.azure.com/#view/Microsoft_AAD_IAM/PasswordResetMenuBlade/~/Notifications`. No PowerShell script is available at this time."
+        References       = @(
+            @{ 'Name' = 'Set up notifications and customizations'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr#set-up-notifications-and-customizations' },
+            @{ 'Name' = 'Notifications in Self-Service Password Reset'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks#notifications' },
+            @{ 'Name' = 'Reset your work or school password using security info'; 'URL' = 'https://support.microsoft.com/en-us/account-billing/reset-your-work-or-school-password-using-security-info-23dde81f-08bb-4776-ba72-e6b72b9dda9e' },
+            @{ 'Name' = 'GS-6: Define and implement identity and privileged access strategy'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-6-define-and-implement-identity-and-privileged-access-strategy' }
+        )
+    }
+    return $inspectorobject
 }
 
 function Audit-CISAz2010
@@ -55,15 +58,22 @@ function Audit-CISAz2010
 		}
 		if ($AffectedOptions.count -igt 0)
 		{
-			$finalobject = Build-CISAz2010($AffectedOptions)
-			return $finalobject
+			$endobject = Build-CISAz2010 -ReturnedValue ($AffectedOptions) -Status "FAIL" -RiskScore "4" -RiskRating "Medium"
+			return $endobject
+		}
+		else
+		{
+			$endobject = Build-CISAz2010 -ReturnedValue ("Notify users on password resets? is set to: $($MethodsRequired.notifyUsersOnPasswordReset)") -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
+		$endobject = Build-CISAz2010 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 

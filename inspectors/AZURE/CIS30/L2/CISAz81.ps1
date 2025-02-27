@@ -1,8 +1,4 @@
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
-# Purpose: Ensure an Azure Bastion Host Exists
+# Benchmark: CIS Microsoft 365 v4.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -12,55 +8,73 @@ Import-Module PoShLog
 $path = @($OutPath)
 
 
-function Build-CISAz81($findings)
+function Build-CISAz81
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz81"
-		FindingName	     = "CIS Az 8.1 - An Azure Bastion Host Does not Exist"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "0"
-		Description	     = "The Azure Bastion service allows organizations a more secure means of accessing Azure Virtual Machines over the Internet without assigning public IP addresses to those Virtual Machines. The Azure Bastion service provides Remote Desktop Protocol (RDP) and Secure Shell (SSH) access to Virtual Machines using TLS within a web browser, thus preventing organizations from opening up 3389/TCP and 22/TCP to the Internet on Azure Virtual Machines. Additional benefits of the Bastion service includes Multi-Factor Authentication, Conditional Access Policies, and any other hardening measures configured within Azure Active Directory using a central point of access"
-		Remediation	     = "No PowerShell Script Available"
-		PowerShellScript = 'New-AzBastion -ResourceGroupName <resource group name> -Name <bastion name> -PublicIpAddress $publicip -VirtualNetwork $virtualNet -Sku "Standard" -ScaleUnit <integer>'
-		DefaultValue	 = "By default, the Azure Bastion service is not configured."
-		ExpectedValue    = "A Azure Bastion service is configured."
-		ReturnedValue    = "$findings"
-		Impact		     = "0"
-		Likelihood	     = "0"
-		RiskRating	     = "Informational"
-		Priority		 = "Informational"
-		References	     = @(@{ 'Name' = 'What is Azure Bastion?'; 'URL' = 'https://learn.microsoft.com/en-us/azure/bastion/bastion-overview#sku' })
-	}
-	return $inspectorobject
+    param (
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{ 
+        UUID             = "CISAz81"
+        ID               = "8.1"
+        Title            = "(L2) Ensure an Azure Bastion Host Exists"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "By default, the Azure Bastion service is not configured."
+        ExpectedValue    = "An Azure Bastion service is configured."
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "The Azure Bastion service allows organizations a more secure means of accessing Azure Virtual Machines over the Internet without assigning public IP addresses to those Virtual Machines. The Azure Bastion service provides Remote Desktop Protocol (RDP) and Secure Shell (SSH) access to Virtual Machines using TLS within a web browser, thus preventing organizations from opening up 3389/TCP and 22/TCP to the Internet on Azure Virtual Machines. Additional benefits of the Bastion service include Multi-Factor Authentication, Conditional Access Policies, and any other hardening measures configured within Azure Active Directory using a central point of access."
+        Impact           = "The Azure Bastion service incurs additional costs and requires a specific virtual network configuration. The Standard tier offers additional configuration options compared to the Basic tier and may incur additional costs for those added features."
+        Remediation      = 'Use the following PowerShell command to deploy an Azure Bastion service: New-AzBastion -ResourceGroupName <resource group name> -Name <bastion name> -PublicIpAddress $publicip -VirtualNetwork $virtualNet -Sku "Standard" -ScaleUnit <integer>'
+        References       = @(
+            @{ 'Name' = 'What is Azure Bastion?'; 'URL' = 'https://learn.microsoft.com/en-us/azure/bastion/bastion-overview#sku' }
+        )
+    }
+
+    return $inspectorobject
 }
+
 
 function Audit-CISAz81
 {
-	try
-	{
-		
-		$Violation = @()
-		$AzResources = Get-AzResource | Select-Object ResourceGroupName -Unique
-		foreach ($AzResource in $AzResources){
-			$AzureBastions = Get-AzBastion -ResourceGroupName $AzResource.ResourceGroupName
-			if ([String]::IsNullOrEmpty($AzureBastions)){
-				$Violation += $AzResource.ResourceGroupName
-			}
-		}
-		
-		
-		if ($Violation.count -igt 0)
-		{
-			$finalobject = Build-CISAz81($Violation)
-			return $finalobject
-		}
-		return $null
-	}
-	catch
-	{
-		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
-		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
-	}
+    try
+    {
+        # Check for Azure Bastion Hosts
+        $Violation = @()
+        $AzResources = Get-AzResource | Select-Object ResourceGroupName -Unique
+
+        foreach ($AzResource in $AzResources)
+        {
+            $AzureBastions = Get-AzBastion -ResourceGroupName $AzResource.ResourceGroupName
+            if ([String]::IsNullOrEmpty($AzureBastions))
+            {
+                $Violation += $AzResource.ResourceGroupName
+            }
+        }
+
+        if ($Violation.Count -gt 0) {
+            $FinalObject = Build-CISAz81 -ReturnedValue $Violation -Status "FAIL" -RiskScore "6" -RiskRating "Medium"
+            return $FinalObject
+        }
+        else {
+            $FinalObject = Build-CISAz81 -ReturnedValue "No violations found" -Status "PASS" -RiskScore "0" -RiskRating "None"
+            return $FinalObject
+        }
+
+        return $null
+    }
+    catch
+    {
+        $EndObject = Build-CISAz81 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
+        Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
+        Write-ErrorLog 'An error occurred on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+        return $EndObject
+    }
 }
 return Audit-CISAz81

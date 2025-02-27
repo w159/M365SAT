@@ -1,9 +1,5 @@
 #Requires -module Az.Accounts
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v2.1.0
-# Product Family: Microsoft Azure
-# Purpose: Checks if 'Number of methods required to reset' is set to '2'
+# Benchmark: CIS Microsoft Azure v3.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -13,33 +9,41 @@ Import-Module PoShLog
 $path = @($OutPath)
 
 
-function Build-CISAz25($findings)
+function Build-CISAz25
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz25"
-		FindingName	     = "CIS Az 2.5 - Number of methods required to reset a password is not set to 2 methods"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "3"
-		Description	     = "A Self-service Password Reset (SSPR) through Azure Multi-factor Authentication (MFA) ensures the user's identity is confirmed using two separate methods of identification. With multiple methods set, an attacker would have to compromise both methods before they could maliciously reset a user's password."
-		Remediation	     = "Manually change the value from 1 to 2 in the Azure Portal. There is no script available at this moment unfortunately."
-		PowerShellScript = 'https://portal.azure.com/#view/Microsoft_AAD_IAM/PasswordResetMenuBlade/~/AuthenticationMethods'
-		DefaultValue	 = "2"
-		ExpectedValue    = "2"
-		ReturnedValue    = "$findings"
-		Impact		     = "3"
-		Likelihood	     = "1"
-		RiskRating	     = "Low"
-		Priority		 = "High"
-		References	     = @(@{ 'Name' = 'Tutorial: Enable users to unlock their account or reset passwords using Microsoft Entra self-service password reset'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr' },
-			@{ 'Name' = 'Combined security information registration for Microsoft Entra overview'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-registration-mfa-sspr-combined' },
-			@{ 'Name' = 'IM-6: Use strong authentication controls'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-identity-management#im-6-use-strong-authentication-controls' },
-			@{ 'Name' = 'Password reset registration'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/passwords-faq#password-reset-registration' },
-			@{ 'Name' = 'Plan a Microsoft Entra self-service password reset deployment'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/howto-sspr-deployment' },
-			@{ 'Name' = 'What authentication and verification methods are available in Microsoft Entra ID?'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-methods' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz25"
+        ID               = "2.5"
+        Title            = "(L1) Ensure That 'Number of methods required to reset' is set to '2'"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "2"
+        ExpectedValue    = "2"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "A Self-service Password Reset (SSPR) through Azure Multi-factor Authentication (MFA) ensures the user's identity is confirmed using two separate methods of identification. With multiple methods set, an attacker would have to compromise both methods before they could maliciously reset a user's password."
+        Impact           = "There may be administrative overhead, as users who lose access to their secondary authentication methods will need an administrator with permissions to remove it. There will also need to be organization-wide security policies and training to teach administrators to verify the identity of the requesting user so that social engineering cannot render this setting useless."
+        Remediation      = "Manually change the value from 1 to 2 in the Azure Portal via the following link: `https://portal.azure.com/#view/Microsoft_AAD_IAM/PasswordResetMenuBlade/~/AuthenticationMethods`. Currently, there is no PowerShell script available to automate this change."
+        References       = @(
+            @{ 'Name' = 'Tutorial: Enable users to unlock their account or reset passwords using Microsoft Entra self-service password reset'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr' },
+            @{ 'Name' = 'Combined security information registration for Microsoft Entra overview'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-registration-mfa-sspr-combined' },
+            @{ 'Name' = 'IM-6: Use strong authentication controls'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-identity-management#im-6-use-strong-authentication-controls' },
+            @{ 'Name' = 'Password reset registration'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/passwords-faq#password-reset-registration' },
+            @{ 'Name' = 'Plan a Microsoft Entra self-service password reset deployment'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/howto-sspr-deployment' },
+            @{ 'Name' = 'What authentication and verification methods are available in Microsoft Entra ID?'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-methods' }
+        )
+    }
+    return $inspectorobject
 }
+
 
 function Audit-CISAz25
 {
@@ -50,16 +54,22 @@ function Audit-CISAz25
 		# Validation
 		if ($MethodsRequired.numberOfAuthenticationMethodsRequired -ne 2)
 		{
-			$finalobject = Build-CISAz25($MethodsRequired.numberOfAuthenticationMethodsRequired)
-			return $finalobject
+			$finalobject = Build-CISAz25 -ReturnedValue ($MethodsRequired.numberOfAuthenticationMethodsRequired) -Status "FAIL" -RiskScore "3" -RiskRating "Low"
+			return $endobject
+		}
+		else
+		{
+			$endobject = Build-CISAz25 -ReturnedValue ($MethodsRequired.numberOfAuthenticationMethodsRequired) -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
-		
 	}
 	catch
 	{
+		$endobject = Build-CISAz25 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 

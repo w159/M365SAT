@@ -1,8 +1,4 @@
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
-# Purpose: Ensure Diagnostic Setting captures appropriate categories
+# Benchmark: CIS Microsoft 365 v4.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -12,58 +8,75 @@ Import-Module PoShLog
 $path = @($OutPath)
 
 
-function Build-CISAz612($findings)
+function Build-CISAz612
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz612"
-		FindingName	     = "CIS Az 6.1.2 - Diagnostic Setting does not capture some appropriate categories"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "2"
-		Description	     = "A diagnostic setting controls how the diagnostic log is exported. Capturing the diagnostic setting categories for appropriate control/management plane activities allows proper alerting."
-		Remediation	     = "Use the PowerShell Script to remediate the issue."
-		PowerShellScript = 'New-AzDiagnosticSetting'
-		DefaultValue	 = "No Diagnostic Setting is set"
-		ExpectedValue    = "Administrative,Alert,Policy,Security"
-		ReturnedValue    = "$findings"
-		Impact		     = "2"
-		Likelihood	     = "1"
-		RiskRating	     = "Low"
-		Priority		 = "Low"
-		References	     = @(@{ 'Name' = 'Diagnostic settings in Azure Monitor'; 'URL' = 'https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings' },
-		@{ 'Name' = 'Resource Manager template samples for diagnostic settings in Azure Monitor'; 'URL' = 'https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/resource-manager-diagnostic-settings?tabs=bicep' },
-		@{ 'Name' = 'LT-3: Enable logging for security investigation'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-logging-threat-detection#lt-3-enable-logging-for-security-investigation' })
-	}
-	return $inspectorobject
+    param (
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz612"
+        ID               = "6.1.2"
+        Title            = "(L1) Ensure Diagnostic Setting captures appropriate categories"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "No Diagnostic Setting is set"
+        ExpectedValue    = "Administrative, Alert, Policy, Security"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "A diagnostic setting controls how the diagnostic log is exported. Capturing the diagnostic setting categories for appropriate control/management plane activities allows proper alerting."
+        Impact           = "Failure to capture diagnostic settings for appropriate categories may hinder security monitoring and incident response."
+        Remediation      = "Use the following PowerShell script to remediate the issue: New-AzDiagnosticSetting"
+        References       = @(
+            @{ 'Name' = 'Diagnostic settings in Azure Monitor'; 'URL' = 'https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/diagnostic-settings' },
+            @{ 'Name' = 'Resource Manager template samples for diagnostic settings in Azure Monitor'; 'URL' = 'https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/resource-manager-diagnostic-settings?tabs=bicep' },
+            @{ 'Name' = 'LT-3: Enable logging for security investigation'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-logging-threat-detection#lt-3-enable-logging-for-security-investigation' }
+        )
+    }
+
+    return $inspectorobject
 }
+
 
 function Audit-CISAz612
 {
-	try
-	{
-		$Violation = @()
-		$SubscriptionId = Get-AzContext
-		$Settings = ((Invoke-AzRestMethod "https://management.azure.com/subscriptions/$($SubscriptionId.Subscription.Id)/providers/Microsoft.Insights/diagnosticSettings?api-version=2021-05-01-preview").Content | ConvertFrom-Json).value.properties.logs
-		foreach ($Setting in $Settings){
-			if ($setting.category -eq 'Administrative' -or $setting.category -eq 'Alert' -or $setting.category -eq 'Policy' -or $setting.category -eq 'Security'){
-				if ($Setting.enabled -eq $false)
-				{
+    try
+    {
+        $Violation = @()
+        $SubscriptionId = Get-AzContext
+        $Settings = ((Invoke-AzRestMethod -Uri "https://management.azure.com/subscriptions/$($SubscriptionId.Subscription.Id)/providers/Microsoft.Insights/diagnosticSettings?api-version=2021-05-01-preview").Content | ConvertFrom-Json).value.properties.logs
+        
+        foreach ($Setting in $Settings) {
+            if ($Setting.category -in @('Administrative', 'Alert', 'Policy', 'Security')) {
+                if ($Setting.enabled -eq $false) {
+                    $Violation += $Setting.category
+                }
+            }
+        }
 
-					$Violation += $setting.category
-				}	
-			}
-		}
+        if ($Violation.Count -gt 0) {
+            $FinalObject = Build-CISAz612 -ReturnedValue $Violation -Status "FAIL" -RiskScore "2" -RiskRating "Low"
+            return $FinalObject
+        }
+        else {
+            $FinalObject = Build-CISAz612 -ReturnedValue "No violations found" -Status "PASS" -RiskScore "0" -RiskRating "None"
+            return $FinalObject
+        }
 
-		if ($Violation.count -igt 0){
-			$finalobject = Build-CISAz611($Violation)
-			return $finalobject
-		}
-		return $null
-	}
-	catch
-	{
-		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
-		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
-	}
+        return $null
+    }
+    catch
+    {
+        $EndObject = Build-CISAz612 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
+        Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
+        Write-ErrorLog 'An error occurred on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+        return $EndObject
+    }
 }
+
 return Audit-CISAz612

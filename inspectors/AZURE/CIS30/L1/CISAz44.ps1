@@ -1,69 +1,77 @@
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v3.0.0
-# Product Family: Microsoft Azure
-# Purpose:  Ensure that Storage Account Access Keys are Periodically Regenerated
+# Benchmark: CIS Microsoft 365 v4.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
 Import-Module PoShLog
 
-#Call the OutPath Variable here
+# Call the OutPath Variable here
 $path = @($OutPath)
 
-
-function Build-CISAz44($findings)
+# Build Function
+function Build-CISAz44
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz44"
-		FindingName	     = "CIS Az 4.4 - Setting Some Storage Account Access Keys are not Periodically Regenerated"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "2"
-		Description	     = "When a storage account is created, Azure generates two 512-bit storage access keys which are used for authentication when the storage account is accessed. Rotating these keys periodically ensures that any inadvertent access or exposure does not result from the compromise of these keys."
-		Remediation	     = "You can change the settings in the URL written in PowerShellScript."
-		PowerShellScript = 'Get-AzStorageAccount | Set-AzStorageAccount -Name $_.StorageAccountName -KeyExpirationPeriodInDay 90'
-		DefaultValue	 = "null"
-		ExpectedValue    = "90"
-		ReturnedValue    = "$findings"
-		Impact		     = "2"
-		Likelihood	     = "1"
-		RiskRating	     = "Low"
-		Priority		 = "Low"
-		References	     = @(@{ 'Name' = 'Create a storage account'; 'URL' = 'https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create?tabs=azure-portal#regenerate-storage-access-keys' },
-		@{ 'Name' = 'PA-1: Separate and limit highly privileged/administrative users'; 'URL' = 'https://pcidssguide.com/pci-dss-key-rotation-requirements/' },
-		@{ 'Name' = 'IM-2: Protect identity and authentication systems'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-identity-management#im-2-protect-identity-and-authentication-systems' },
-		@{ 'Name' = 'GS-6: Define and implement identity and privileged access strategy'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-governance-strategy#gs-6-define-and-implement-identity-and-privileged-access-strategy' },
-		@{ 'Name' = 'PCI DSS Key Rotation Requirements'; 'URL' = 'https://pcidssguide.com/pci-dss-key-rotation-requirements/' },
-		@{ 'Name' = 'NIST 800-57 Rev. 5 - Recommendation for Key Management'; 'URL' = 'https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r5.pdf' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz44"
+        ID               = "4.4"
+        Title            = "(L1) Ensure that Storage Account Access Keys are Periodically Regenerated"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "Null"
+        ExpectedValue    = "KeyExpirationPeriodInDay: 90"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "Periodically regenerating storage account access keys reduces the risk of unauthorized access to sensitive data."
+        Impact           = "Regenerating access keys can affect services in Azure as well as the organization's applications that are dependent on the storage account. All clients who use the access key to access the storage account must be updated to use the new key."
+        Remediation      = 'Use the following PowerShell command to regenerate keys: Get-AzStorageAccount | Set-AzStorageAccount -Name $_.StorageAccountName -KeyExpirationPeriodInDay 90'
+        References       = @(
+            @{ 'Name' = 'Manage storage account access keys'; 'URL' = 'https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage' },
+            @{ 'Name' = 'Microsoft Azure Security Best Practices'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/' },
+            @{ 'Name' = 'NIST 800-57 Key Management'; 'URL' = 'https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r5.pdf' },
+            @{ 'Name' = 'Best practices for storage accounts'; 'URL' = 'https://learn.microsoft.com/en-us/azure/storage/common/storage-account-overview' }
+        )
+    }
+    return $inspectorobject
 }
 
+# Audit Function
 function Audit-CISAz44
 {
-	try
-	{
-		$violation = @()
-		$accounts = Get-AzStorageAccount -ErrorAction SilentlyContinue
-		ForEach ($account in $accounts){
-			if ($account.KeyPolicy.KeyExpirationPeriodInDays -lt 90 -or $null -eq $account.KeyPolicy.KeyExpirationPeriodInDays){
-				$violation += $account.StorageAccountName
-			}elseif ($null -eq $account.KeyCreationTime.Key1 -or $null -eq $account.KeyCreationTime.Key2){
-				$violation += $account.StorageAccountName
-			}
-		}
+    try
+    {
+        $Violation = @()
+        $Settings = Get-AzStorageAccount -ErrorAction SilentlyContinue
 
-		if ($violation.Count -igt 0){
-			$finalobject = Build-CISAz44($violation)
-			return $finalobject
-		}
-		return $null
-	}
-	catch
-	{
-		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
-		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
-	}
+        foreach ($Value in $Settings) {
+            if ($Value.KeyPolicy.KeyExpirationPeriodInDays -lt 90 -or $null -eq $Value.KeyPolicy.KeyExpirationPeriodInDays) {
+                $Violation += $Value.StorageAccountName
+            }
+        }
+
+        if ($Violation.Count -gt 0) {
+            $FinalObject = Build-CISAz44 -ReturnedValue $Violation -Status "FAIL" -RiskScore "2" -RiskRating "Low"
+            return $FinalObject
+        } else {
+            $FinalObject = Build-CISAz44 -ReturnedValue "No violations found" -Status "PASS" -RiskScore "0" -RiskRating "None"
+            return $FinalObject
+        }
+
+        return $null
+    }
+    catch
+    {
+        $EndObject = Build-CISAz44 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
+        Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
+        Write-ErrorLog 'An error occurred on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+        return $EndObject
+    }
 }
 return Audit-CISAz44

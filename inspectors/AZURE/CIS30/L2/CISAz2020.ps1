@@ -1,8 +1,4 @@
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Azure v2.1.0
-# Product Family: Microsoft Azure
-# Purpose: Ensure that 'Owners can manage group membership requests in the Access Panel' is set to 'No'
+# Benchmark: CIS Microsoft Azure v3.0.0
 # Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
@@ -11,33 +7,39 @@ Import-Module PoShLog
 #Call the OutPath Variable here
 $path = @($OutPath)
 
-
-function Build-CISAz2020($findings)
+function Build-CISAz2020
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz2020"
-		FindingName	     = "CIS Az 2.20 - Owners can manage group membership requests in the Access Panel is set to Yes"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "3"
-		Description	     = "Restricting security group management to administrators only prohibits users from making changes to security groups. This ensures that security groups are appropriately managed and their management is not delegated to non-administrators."
-		Remediation	     = "Change the value back to False to be compliant again. There is no automatic script available at this moment unfortunately."
-		PowerShellScript = 'https://portal.azure.com/#view/Microsoft_AAD_IAM/GroupsManagementMenuBlade/~/General'
-		DefaultValue	 = "True"
-		ExpectedValue    = "False"
-		ReturnedValue    = "$findings"
-		Impact		     = "3"
-		Likelihood	     = "1"
-		RiskRating	     = "Low"
-		Priority		 = "High"
-		References	     = @(@{ 'Name' = 'Set up self-service group management in Microsoft Entra ID'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/users/groups-self-service-management#making-a-group-available-for-end-user-self-service' },
-		@{ 'Name' = 'PA-1: Separate and limit highly privileged/administrative users'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-privileged-access#pa-1-separate-and-limit-highly-privilegedadministrative-users' },
-		@{ 'Name' = 'PA-3: Manage lifecycle of identities and entitlements'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-privileged-access#pa-3-manage-lifecycle-of-identities-and-entitlements' },
-		@{ 'Name' = 'PA-8 Determine access process for cloud provider support'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-privileged-access#pa-3-manage-lifecycle-of-identities-and-entitlements' },
-		@{ 'Name' = 'GS-2: Define and implement enterprise segmentation/separation of duties strategyment'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-2-define-and-implement-enterprise-segmentationseparation-of-duties-strategy' },
-		@{ 'Name' = 'GS-6: Define and implement identity and privileged access strategy'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-6-define-and-implement-identity-and-privileged-access-strategy' })
-	}
-return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz2020"
+        ID               = "2.20"
+        Title            = "(L2) Ensure that 'Owners can manage group membership requests in My Groups' is set to 'No'"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "True"
+        ExpectedValue    = "False"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "If group owners are allowed to manage membership requests in the Access Panel, non-administrators can make changes to security groups. This can lead to unauthorized access or privilege escalation. To ensure proper governance, security group membership management should be limited to administrators only."
+        Impact           = "Group Membership for user accounts will need to be handled by Admins and cause administrative overhead."
+        Remediation      = "To restrict security group membership management to administrators ensure setting 'Owners can manage group membership requests in My Groups' to 'No': https://portal.azure.com/#view/Microsoft_AAD_IAM/GroupsManagementMenuBlade/~/General"
+        References       = @(
+            @{ 'Name' = 'Set up self-service group management in Microsoft Entra ID'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/users/groups-self-service-management#making-a-group-available-for-end-user-self-service' },
+            @{ 'Name' = 'PA-1: Separate and limit highly privileged/administrative users'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-privileged-access#pa-1-separate-and-limit-highly-privilegedadministrative-users' },
+            @{ 'Name' = 'PA-3: Manage lifecycle of identities and entitlements'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-privileged-access#pa-3-manage-lifecycle-of-identities-and-entitlements' },
+            @{ 'Name' = 'PA-8: Determine access process for cloud provider support'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-privileged-access#pa-3-manage-lifecycle-of-identities-and-entitlements' },
+            @{ 'Name' = 'GS-2: Define and implement enterprise segmentation/separation of duties strategy'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-2-define-and-implement-enterprise-segmentationseparation-of-duties-strategy' },
+            @{ 'Name' = 'GS-6: Define and implement identity and privileged access strategy'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-governance-strategy#gs-6-define-and-implement-identity-and-privileged-access-strategy' }
+        )
+    }
+    return $inspectorobject
 }
 
 function Audit-CISAz2020
@@ -55,15 +57,22 @@ function Audit-CISAz2020
 		}
 		if ($AffectedOptions.count -igt 0)
 		{
-			$finalobject = Build-CISAz2020($AffectedOptions)
-			return $finalobject
+			$endobject = Build-CISAz2020 -ReturnedValue ($AffectedOptions) -Status "FAIL" -RiskScore "3" -RiskRating "Low"
+			return $endobject
+		}
+		else
+		{
+			$endobject = Build-CISAz2020 -ReturnedValue "Owners can manage group membership requests in the Access Panel is set to: $($SelfServiceGroupSetting.selfServiceGroupManagementEnabled)" -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
+		$endobject = Build-CISAz2020 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 

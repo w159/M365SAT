@@ -12,30 +12,38 @@ Import-Module PoShLog
 $path = @($OutPath)
 
 
-function Build-CISAz228($findings)
+function Build-CISAz228
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISAz228"
-		FindingName	     = "CIS Az 2.2.8 - No Multi-factor Authentication Policy Exists for Microsoft Admin Portals"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "15"
-		Description	     = "Administrative Portals for Microsoft Azure should be secured with a higher level of scrutiny to authenticating mechanisms. Enabling multifactor authentication is recommended to reduce the potential for abuse of Administrative actions, and to prevent intruders or compromised admin credentials from changing administrative settings."
-		Remediation	     = "Create an Conditional Access Policy to enable MFA For Admin Portals"
-		PowerShellScript = 'Unavailable'
-		DefaultValue	 = "null"
-		ExpectedValue    = "A policy"
-		ReturnedValue    = "$findings"
-		Impact		     = "3"
-		Likelihood	     = "5"
-		RiskRating	     = "High"
-		Priority		 = "High"
-		References	     = @(@{ 'Name' = 'Conditional Access: Users, groups, and workload identities'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-conditional-access-users-groups' },
-			@{ 'Name' = 'Common Conditional Access policy: Require multifactor authentication for admins accessing Microsoft admin portals'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/how-to-policy-mfa-admin-portals' },
-			@{ 'Name' = 'IM-7: Restrict resource access based on conditions'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-identity-management#im-7-restrict-resource-access-based-on--conditions' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz228"
+        ID               = "2.2.8"
+        Title            = "(L1) Ensure Multi-Factor Authentication (MFA) is enabled for Microsoft Admin Portals"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "No Policy"
+        ExpectedValue    = "A Policy"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "Enabling Multi-Factor Authentication (MFA) for administrative portals helps mitigate the risk of unauthorized access by adding an additional layer of authentication for administrators accessing sensitive settings."
+        Impact           = "Conditional Access policies require Microsoft Entra ID P1 or P2 licenses. Similarly, they may require additional overhead to maintain if users lose access to their MFA. Any users or groups which are granted an exception to this policy should be carefully tracked, be granted only minimal necessary privileges, and conditional access exceptions should be reviewed or investigated."
+        Remediation      = "Create a Conditional Access Policy to enable MFA for admin portals by enforcing MFA when accessing Microsoft admin portals."
+        References       = @(
+            @{ 'Name' = 'Conditional Access: Users, groups, and workload identities'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-conditional-access-users-groups' },
+            @{ 'Name' = 'Common Conditional Access policy: Require multifactor authentication for admins accessing Microsoft admin portals'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/how-to-policy-mfa-admin-portals' },
+            @{ 'Name' = 'IM-7: Restrict resource access based on conditions'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/security-controls-v3-identity-management#im-7-restrict-resource-access-based-on--conditions' }
+        )
+    }
+    return $inspectorobject
 }
+#15high
 
 function Audit-CISAz228
 {
@@ -58,7 +66,7 @@ function Audit-CISAz228
 				}
 				else
 				{
-					$Policies | Format-Table -AutoSize | Out-File "$path\CISAz227-MFAPoliciesForMicrosoftAdminPortals.txt"
+					$Policies | Format-Table -AutoSize | Out-File "$path\CISAz228-MFAPoliciesForMicrosoftAdminPortals.txt"
 				}
 			}
 		}
@@ -66,15 +74,21 @@ function Audit-CISAz228
 		# Validation
 		if ($Violation.Count -ne 0)
 		{
-			$finalobject = Build-CISAz228($Violation)
+			$finalobject = Build-CISAz228 -ReturnedValue ($Violation) -Status "FAIL" -RiskScore "15" -RiskRating "High"
 			return $finalobject
+		}else
+		{
+			$endobject = Build-CISAz228 -ReturnedValue "Conditional Access Policy defining Multi-factor Authentication Policy for Microsoft Admin Portals is enabled!" -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
+		$endobject = Build-CISAz228 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 return Audit-CISAz228

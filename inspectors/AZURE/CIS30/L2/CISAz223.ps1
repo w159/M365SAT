@@ -11,31 +11,37 @@ Import-Module PoShLog
 #Call the OutPath Variable here
 $path = @($OutPath)
 
-
-function Build-CISAz223($findings)
+function Build-CISAz223
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISMAz223"
-		FindingName	     = "CIS Az 2.2.3 - No exclusionary Device code flow policy is considered"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "10"
-		Description	     = "Conditional Access Policies can be used to prevent the Device code authentication flow. Device code flow should be permitted only for users that regularly perform duties that explicitly require the use of Device Code to authenticate, such as utilizing Azure with PowerShell."
-		Remediation	     = "Configure the policy at the ConditionalAccess Blade below in the PowerShell Script. There is a Policy Template available which you can create if there is no such policy created beforehand."
-		PowerShellScript = 'https://entra.microsoft.com/#view/Microsoft_AAD_ConditionalAccess/ConditionalAccessBlade/~/Policies '
-		DefaultValue	 = "No Policy"
-		ExpectedValue    = "A Policy"
-		ReturnedValue    = "$findings"
-		Impact		     = "5"
-		Likelihood	     = "2"
-		RiskRating	     = "High"
-		Priority		 = "High"
-		References	     = @(@{ 'Name' = 'Device code flow'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-authentication-flows#device-code-flow' },
-		@{ 'Name' = 'IM-7: Restrict resource access based on conditions'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-identity-management#im-7-restrict-resource-access-based-on--conditions' },
-		@{ 'Name' = 'What is Conditional Access report-only mode?'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-conditional-access-report-only' },
-		@{ 'Name' = 'Block authentication flows with Conditional Access policy'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/how-to-policy-authentication-flows' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz223"
+        ID               = "2.2.3"
+        Title            = "(L2) Ensure that an exclusionary Device code flow policy is considered"
+        ProductFamily    = "Microsoft Azure"
+        DefaultValue     = "No Policy"
+        ExpectedValue    = "A Policy"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "Conditional Access policies should be used to restrict the Device Code authentication flow. This flow is typically used for devices with limited input capability, such as IoT devices. It should be restricted to only users who require it for administrative tasks, such as using Azure PowerShell."
+        Impact           = "This policy should be tested using the Report-only mode before implementation. Without a full and careful understanding of the accounts and personnel who require Device code authentication flow, implementing this policy can block authentication for users and devices who rely on Device code flow. For users and devices that rely on device code flow authentication, more secure alternatives should be implemented wherever possible."
+        Remediation      = "Create a Conditional Access policy to restrict Device Code Flow authentication through the Microsoft Entra admin portal."
+        References       = @(
+            @{ 'Name' = 'Device code flow'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-authentication-flows#device-code-flow' },
+            @{ 'Name' = 'IM-7: Restrict resource access based on conditions'; 'URL' = 'https://learn.microsoft.com/en-us/security/benchmark/azure/mcsb-identity-management#im-7-restrict-resource-access-based-on--conditions' },
+            @{ 'Name' = 'What is Conditional Access report-only mode?'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/concept-conditional-access-report-only' },
+            @{ 'Name' = 'Block authentication flows with Conditional Access policy'; 'URL' = 'https://learn.microsoft.com/en-us/entra/identity/conditional-access/how-to-policy-authentication-flows' }
+        )
+    }
+    return $inspectorobject
 }
 
 function Audit-CISAz223
@@ -67,15 +73,21 @@ function Audit-CISAz223
 
 		if ($Violation.Count -ne 0)
 		{
-			$finalobject = Build-CISAz223($Violation)
+			$finalobject = Build-CISAz223 -ReturnedValue ($Violation) -Status "FAIL" -RiskScore "10" -RiskRating "High"
 			return $finalobject
+		}else
+		{
+			$endobject = Build-CISAz223 -ReturnedValue "Conditional Access Policy defining Device code flow is enabled!" -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
+		$endobject = Build-CISAz223 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
 return Audit-CISAz223
