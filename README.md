@@ -4,9 +4,9 @@ Written in PowerShell 7 and 5.1
 
 Current Version: v3.0 beta
 
-Next Major Scheduled Release: Q1 (January 2025)
+Next Scheduled Release: March 2025
 
-Next Release Version: v3.0
+Next Release Version: v3.1
 
 <div>
   <p align="center">
