@@ -17,7 +17,7 @@ Next Release Version: v3.0
 
 
 [![OS](https://img.shields.io/badge/OS-Windows-blue?style=flat&logo=Windows)](https://www.microsoft.com/en-gb/windows/?r=1)
-[![Docker](https://img.shields.io/badge/Docker-Coming_Soon-red.svg?style=flat&logo=docker)](https://github.com/asterictnl-lvdw/365Inspect)
+[![Docker](https://img.shields.io/badge/Docker-Coming_Soon-red.svg?style=flat&logo=docker)](https://github.com/Karmakstylez/M365SAT)
 
 
 ## 1. Intro
@@ -351,7 +351,7 @@ To maintain a secure environment, please follow these best practices:
 - **Avoid Untrusted Scripts**: Do not place any PowerShell scripts in the inspector folder unless they are from a trusted source.
 
 ## 7. License
-M365SAT is an open-source and free software released under the [MIT License](https://github.com/asterictnl-lvdw/M365SAT/blob/main/LICENSE). All the additional plug-ins and frameworks are also accompanied by the same MIT Licence. 
+M365SAT is an open-source and free software released under the [MIT License](https://raw.githubusercontent.com/Karmakstylez/M365SAT/refs/heads/production/LICENSE). All the additional plug-ins and frameworks are also accompanied by the same MIT Licence. 
 
 ## 8. Special Thanks To...
 * [Soteria-Security](https://github.com/soteria-security/365Inspect): For allowing me to create the fork on the predecessor!

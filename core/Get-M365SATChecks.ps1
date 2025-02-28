@@ -10,7 +10,7 @@ function Get-M365SATChecks($Directory, $EnvironmentType, $BenchmarkVersion, $Mod
 			{
 				mkdir $Directory
 			}
-			wget 'https://github.com/asterictnl-lvdw/M365SAT-Inspectors/archive/refs/heads/production.zip' -O $Directory/inspectors.zip
+			wget 'https://github.com/Karmakstylez/M365SAT-Inspectors/archive/refs/heads/production.zip' -O $Directory/inspectors.zip
 			unzip $Directory/inspectors.zip -d $Directory
 			mv $Directory/M365SAT-Inspectors-production/inspectors/* $Directory
 			rm -rf $Directory/M365SAT-Inspectors-production
@@ -25,7 +25,7 @@ function Get-M365SATChecks($Directory, $EnvironmentType, $BenchmarkVersion, $Mod
 			{
 				New-Item -Path $Directory -ItemType Directory
 			}
-			Invoke-WebRequest 'https://github.com/asterictnl-lvdw/M365SAT-Inspectors/archive/refs/heads/production.zip' -OutFile $Directory\inspectors.zip
+			Invoke-WebRequest 'https://github.com/Karmakstylez/M365SAT-Inspectors/archive/refs/heads/production.zip' -OutFile $Directory\inspectors.zip
 			Expand-Archive $Directory\inspectors.zip -DestinationPath $Directory -Force
 			Move-Item -Path $Directory\M365SAT-Inspectors-production\inspectors\* -Destination $Directory -Force
 			Get-ChildItem -Path $Directory -Recurse -Force | Unblock-File #So no problems will occur when trying to execute inspectors
@@ -40,7 +40,7 @@ function Get-M365SATChecks($Directory, $EnvironmentType, $BenchmarkVersion, $Mod
 			{
 				New-Item -Path $Directory -ItemType Directory
 			}
-			Invoke-WebRequest 'https://github.com/asterictnl-lvdw/M365SAT-Inspectors/archive/refs/heads/production.zip' -OutFile $Directory\inspectors.zip
+			Invoke-WebRequest 'https://github.com/Karmakstylez/M365SAT-Inspectors/archive/refs/heads/production.zip' -OutFile $Directory\inspectors.zip
 			Expand-Archive $Directory\inspectors.zip -DestinationPath $Directory -Force
 			Move-Item -Path $Directory\M365SAT-Inspectors-production\inspectors\* -Destination $Directory -Force
 			Get-ChildItem -Path $Directory -Recurse -Force | Unblock-File #So no problems will occur when trying to execute inspectors

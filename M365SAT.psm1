@@ -27,12 +27,12 @@
         
         ############################################################################
 
-        URL: https://github.com/asterictnl-lvdw/M365SAT
+        URL: https://github.com/Karmakstylez/M365SAT
 
         ############################################################################    
 
 	.LINK
-        https://github.com/asterictnl-lvdw/M365SAT
+        https://github.com/Karmakstylez/M365SAT
 
 #>
 

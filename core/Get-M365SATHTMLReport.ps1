@@ -580,7 +580,7 @@ function Get-M365SATHTMLReport
                 <div class='col-sm-8'>
                     <h6>Configuration Health Index</h6>                  
                     <p>The configuration health index is a weighted value representing your configuration. Not all configuration is 
-                    considered the same. Some configuration is weighted higher than others. <a href='https://github.com/aster-lvdw/M365SAT' target='_blank'>See More... </a></p>
+                    considered the same. Some configuration is weighted higher than others. <a href='https://github.com/Karmakstylez/M365SAT' target='_blank'>See More... </a></p>
 
                 </div>
             </div>                    
@@ -957,7 +957,7 @@ function Get-M365SATHTMLReport
                 <button class='btn btn-primary' onClick='collapse();'>Collapse All</button>
             </div> 
             </main>
-            <center>Found a bug? Report it! <a href='https://github.com/karmakstylez/M365SAT'>GitHub</a></center>
+            <center>Found a bug? Report it! <a href='https://github.com/Karmakstylez/M365SAT'>GitHub</a></center>
             </div>
             <div class='alert alert-success pt-2' >
             <center>Like this report? Try similar reporting for Microsoft's Compliance solutions. Download <a href='https://aka.ms/orca-mcca-github' target='_blank'> Microsoft Compliance Config Analyzer (MCCA)</a></center>

@@ -13,7 +13,7 @@
 - **Report Status Enhancement**: Introduce a 3-status reporting mechanism (OK, FAIL, UNKNOWN) to include successfully passed checks in the report. **Status: IN-PROGRESS**
 - **Finding-Objects Expansion**: Add new objects to enhance reporting, including Paragraph and Status attributes. **Status: IN-PROGRESS**
 - **AzAccount MultiAPI Replacement**: Replacing AzAccount MultiAPI Connector with a no-dependency connector; requires a one-time authentication for token generation. **Status: POSTPONED**
-- [Issue #37](https://github.com/asterictnl-lvdw/M365SAT/issues/37) **Status: IN-PROGRESS**
+- [Issue #37](https://github.com/Karmakstylez/M365SAT/issues/37) **Status: IN-PROGRESS**
 - **CSV Output Improvement**: Enhance CSV output functionality for better data handling. **Status: M365 Converted, Azure IN-PROGRESS**
 - **XML/JSON Output Support**: Add support for XML and JSON as additional output formats. **Status: IN-PROGRESS**
 - **Service Principal Integration**: Explore using a service principal instead of a global admin account for operations, ensuring proper permissions. **Status: IN-PROGRESS**
