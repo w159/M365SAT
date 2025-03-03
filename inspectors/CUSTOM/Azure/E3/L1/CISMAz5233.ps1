@@ -44,8 +44,15 @@ function Audit-CISMAz5233
 	{
 		$AffectedOptions = @()
 		# Actual Script
-		$MethodsRequired = [PSCustomObject]@{}
-		((Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/v1.0/groupSettings").value | Where-Object { $_.displayName -eq "Password Rule Settings" }).values | ForEach-Object { $MethodsRequired | Add-Member -NotePropertyName $_.Name -NotePropertyValue $_.value }
+		$MethodsRequired = @{}
+
+		$Request = ((Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/v1.0/groupSettings").value | Where-Object { $_.displayName -eq "Password Rule Settings" }).values 
+		$Request | ForEach-Object {
+			$MethodsRequired[$_.Name] = $_.Value
+		}
+
+		$MethodsRequired = [PSCustomObject]$MethodsRequired
+
 		# Validation
 		if ($MethodsRequired.bannedPasswordCheckOnPremisesMode -ne 'Enforced')
 		{
