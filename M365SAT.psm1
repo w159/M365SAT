@@ -6,7 +6,7 @@
 		M365SAT - The Microsoft 365 Security Assessment Tool
     
     .VERSION
-        Version 3.0 Alpha
+        Version 3.1 alpha
 
     .RELEASE_DATE
         08-23-2024
@@ -23,7 +23,7 @@
         Output report uses open source components for HTML formatting
         - Bootstrap 5 - MIT License - https://getbootstrap.com/docs/4.0/about/license/
         - Fontawesome 6 - CC BY 4.0 License - https://fontawesome.com/license/free
-        - Leonardo van de Weteringh © 2024
+        - Leonardo van de Weteringh © 2025
         
         ############################################################################
 
@@ -208,8 +208,9 @@ function Get-M365SATReport
 		}
 		else
 		{
+			#ExpirimentalMode is now the same as normal mode as the format has been changed.
 			Write-Host "$(Get-Date): Executing Inspectors in SingleThread Mode..."
-			$object = Invoke-M365SATCustomChecks -inspectors $inspectorlist -Directory $Directory
+			$object = Invoke-M365SATChecksNew -inspectors $inspectorlist -Directory $Directory
 		}
 	}
 	else
