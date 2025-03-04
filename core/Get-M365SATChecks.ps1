@@ -1,5 +1,5 @@
 <# Downloads all Inspectors and creates list #>
-function Get-M365SATChecks($Directory, $EnvironmentType, $BenchmarkVersion, $Modules, $LicenseMode, $LicenseLevel)
+function Get-M365SATChecks($Directory, $EnvironmentType, $Modules, $LicenseMode, $LicenseLevel)
 {
 		if($IsLinux){
 			if(Test-Path $Directory){
@@ -47,10 +47,10 @@ function Get-M365SATChecks($Directory, $EnvironmentType, $BenchmarkVersion, $Mod
 			Remove-Item -LiteralPath $Directory\M365SAT-Inspectors-production -Force -Recurse
 			$tempfiles += "$Directory\inspectors.zip"
 		}
-		Get-M365SATLocalChecks -Directory $Directory -EnvironmentType $EnvironmentType -BenchmarkVersion $BenchmarkVersion -Modules $Modules -LicenseMode $LicenseMode -LicenseLevel $LicenseLevel
+		Get-M365SATLocalChecks -Directory $Directory -EnvironmentType $EnvironmentType -Modules $Modules -LicenseMode $LicenseMode -LicenseLevel $LicenseLevel
 }
 
-function Get-M365SATLocalChecks($Directory, $EnvironmentType, $BenchmarkVersion, $Modules, $LicenseMode, $LicenseLevel)
+function Get-M365SATLocalChecks($Directory, $EnvironmentType, $Modules, $LicenseMode, $LicenseLevel)
 {
 	# Initializations
 	[Array]$listfullinspectors = @()
@@ -79,18 +79,6 @@ function Get-M365SATLocalChecks($Directory, $EnvironmentType, $BenchmarkVersion,
 			[Array]$LicenseLevel = @("L1","L2")
 		}
 
-	# Switch statements
-		switch ($BenchmarkVersion) {
-			3 {	
-				[string]$AzureVersion = "CIS30"
-				[string]$M365Version = "CIS30"
-			}
-			"Latest"{
-				[string]$AzureVersion = "CIS30"
-				[string]$M365Version = "CIS40"
-			}
-		}
-
 
 		switch ($EnvironmentType) {
 			"M365" {  
@@ -101,7 +89,7 @@ function Get-M365SATLocalChecks($Directory, $EnvironmentType, $BenchmarkVersion,
 						"E3" { 
 							switch ($LicenseLevel) {
 								"L1" {
-									$E3L1Inspectors = Get-ChildItem $Directory\$M365Folder\$Module\$M365Version\$E3Folder\$L1Folder\*.ps1 
+									$E3L1Inspectors = Get-ChildItem $Directory\$M365Folder\$Module\$E3Folder\$L1Folder\*.ps1 
 									foreach ($inspector in $E3L1Inspectors)
 									{
 										[string]$fullname = $inspector.FullName
@@ -110,7 +98,7 @@ function Get-M365SATLocalChecks($Directory, $EnvironmentType, $BenchmarkVersion,
 									}
 								}
 								"L2" {
-									$E3L2Inspectors = Get-ChildItem $Directory\$M365Folder\$Module\$M365Version\$E3Folder\$L2Folder\*.ps1 
+									$E3L2Inspectors = Get-ChildItem $Directory\$M365Folder\$Module\$E3Folder\$L2Folder\*.ps1 
 									foreach ($inspector in $E3L2Inspectors)
 									{
 										[string]$fullname = $inspector.FullName
@@ -124,7 +112,7 @@ function Get-M365SATLocalChecks($Directory, $EnvironmentType, $BenchmarkVersion,
 						"E5" {
 							switch ($LicenseLevel) {
 								"L1" {  
-									$E5L1Inspectors = Get-ChildItem $Directory\$M365Folder\$Module\$M365Version\$E5Folder\$L1Folder\*.ps1 
+									$E5L1Inspectors = Get-ChildItem $Directory\$M365Folder\$Module\$E5Folder\$L1Folder\*.ps1 
 									foreach ($inspector in $E5L1Inspectors)
 									{
 										[string]$fullname = $inspector.FullName
@@ -133,7 +121,7 @@ function Get-M365SATLocalChecks($Directory, $EnvironmentType, $BenchmarkVersion,
 									}
 								}
 								"L2" {
-									$E5L2Inspectors = Get-ChildItem $Directory\$M365Folder\$Module\$M365Version\$E5Folder\$L2Folder\*.ps1 
+									$E5L2Inspectors = Get-ChildItem $Directory\$M365Folder\$Module\$E5Folder\$L2Folder\*.ps1 
 									foreach ($inspector in $E5L2Inspectors)
 									{
 										[string]$fullname = $inspector.FullName
@@ -150,7 +138,7 @@ function Get-M365SATLocalChecks($Directory, $EnvironmentType, $BenchmarkVersion,
 			"AZURE" {
 				switch ($LicenseLevel) {
 					"L1" {
-						$L1Inspectors = Get-ChildItem $Directory\$AZUREFolder\$AzureVersion\$L1Folder\*.ps1
+						$L1Inspectors = Get-ChildItem $Directory\$AZUREFolder\$L1Folder\*.ps1
 						foreach ($inspector in $L1Inspectors)
 						{
 							[string]$fullname = $inspector.FullName
@@ -159,7 +147,7 @@ function Get-M365SATLocalChecks($Directory, $EnvironmentType, $BenchmarkVersion,
 						}
 					}
 					"L2" {
-						$L2Inspectors = Get-ChildItem $Directory\$AZUREFolder\$AzureVersion\$L2Folder\*.ps1 
+						$L2Inspectors = Get-ChildItem $Directory\$AZUREFolder\$L2Folder\*.ps1 
 						foreach ($inspector in $L2Inspectors)
 						{
 							[string]$fullname = $inspector.FullName

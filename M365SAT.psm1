@@ -97,10 +97,6 @@ function Get-M365SATReport
 		[ValidateSet('M365', 'AZURE', 'CUSTOM', 'ALL', IgnoreCase = $true)]
 		[string[]]$EnvironmentType = "ALL",
 		[Parameter(Mandatory = $true,
-			HelpMessage = 'Choose Benchmark Version: 3 / LATEST')]
-		[ValidateSet(3, 'LATEST', IgnoreCase = $true)]
-		[string]$BenchmarkVersion = "LATEST",
-		[Parameter(Mandatory = $true,
 			HelpMessage = 'Available Modules: Azure / Exchange / Office365 / Sharepoint / Teams / All')]
 		[ValidateSet('Azure', 'Exchange', 'Office365', 'Sharepoint', 'Teams', 'All', IgnoreCase = $true)]
 		[String[]]$Modules = "All",
@@ -200,7 +196,7 @@ function Get-M365SATReport
 	if ($LocalMode.IsPresent)
 	{
 		Write-Host "$(Get-Date): Getting Inspectors..."
-		$inspectorlist = Get-M365SATLocalChecks -Directory $Directory -EnvironmentType $EnvironmentType -BenchmarkVersion $BenchmarkVersion -Modules $Modules -LicenseMode $LicenseMode -LicenseLevel $LicenseLevel #Gets list of all inspectors
+		$inspectorlist = Get-M365SATLocalChecks -Directory $Directory -EnvironmentType $EnvironmentType -Modules $Modules -LicenseMode $LicenseMode -LicenseLevel $LicenseLevel #Gets list of all inspectors
 		if ($ExpirimentalMode.IsPresent)
 		{
 			Write-Host "$(Get-Date): Executing Inspectors in Expirimental Mode..."
@@ -216,7 +212,7 @@ function Get-M365SATReport
 	else
 	{
 		Write-Host "$(Get-Date): Getting Inspectors..."
-		$inspectorlist = Get-M365SATChecks -Directory $Directory -EnvironmentType $EnvironmentType -BenchmarkVersion $BenchmarkVersion -Modules $Modules -LicenseMode $LicenseMode -LicenseLevel $LicenseLevel #Gets list of all inspectors
+		$inspectorlist = Get-M365SATChecks -Directory $Directory -EnvironmentType $EnvironmentType -Modules $Modules -LicenseMode $LicenseMode -LicenseLevel $LicenseLevel #Gets list of all inspectors
 		if ($ExpirimentalMode.IsPresent)
 		{
 			Write-Host "$(Get-Date): Creating Directories..."
