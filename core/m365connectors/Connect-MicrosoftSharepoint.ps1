@@ -33,10 +33,13 @@ function Invoke-MicrosoftSharepointPnPConnection {
             Write-Host "Connecting to Microsoft PnP PowerShell... (Attempt $attempt of $maxAttempts)"
 
             # Register or retrieve the ClientId for the app
-            $ClientId = Register-PnPEntraIDAppForInteractiveLogin -ApplicationName "PnP Rocks" -Tenant "$TenantName.onmicrosoft.com" -Credential $Credential -ErrorAction Stop
-            $ClientId = $ClientId.'AzureAppId/ClientId'
-            if ([string]::IsNullOrEmpty($ClientId)) {
+            if ($null -ne ((Get-MgApplication | Where-Object { $_.DisplayName -eq 'PnP Rocks' }).AppId)){
                 $ClientId = (Get-MgApplication | Where-Object { $_.DisplayName -eq 'PnP Rocks' }).AppId
+            }
+            else{
+                Write-Host "Creating EntraIDAppRegistration for PnP.PowerShell..."
+                $ClientId = Register-PnPEntraIDAppForInteractiveLogin -ApplicationName "PnP Rocks" -Tenant "$TenantName.onmicrosoft.com" -Interactive -AzureEnvironment $SpEnvironment -ErrorAction SilentlyContinue
+                $ClientId = $ClientId.'AzureAppId/ClientId'
             }
 
             # Determine the method of connection based on provided parameters
