@@ -56,7 +56,7 @@ function Invoke-MicrosoftTeamsConnection {
                     Connect-MicrosoftTeams -TeamsEnvironmentName $TmsEnvironmentName -UserPrincipalName $Username -ErrorAction Stop | Out-Null
                 }
                 else {
-                    Connect-MicrosoftTeams -AccountId $Username -ErrorAction Stop | Out-Null
+                    Connect-MicrosoftTeams -ErrorAction Stop | Out-Null
                 }
             }
             else {
