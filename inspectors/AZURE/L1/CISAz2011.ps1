@@ -64,14 +64,14 @@ function Audit-CISAz2011
 		}
 		else
 		{
-			$endobject = Build-CISAz211 -ReturnedValue ("Notify all admins when other admins reset their password? is set to: $($MethodsRequired.notifyOnAdminPasswordReset)") -Status "PASS" -RiskScore "0" -RiskRating "None"
+			$endobject = Build-CISAz2011 -ReturnedValue ("Notify all admins when other admins reset their password? is set to: $($MethodsRequired.notifyOnAdminPasswordReset)") -Status "PASS" -RiskScore "0" -RiskRating "None"
 			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
-		$endobject = Build-CISAz211 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
+		$endobject = Build-CISAz2011 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
 		return $endobject
