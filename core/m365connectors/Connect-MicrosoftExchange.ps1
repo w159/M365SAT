@@ -1,160 +1,64 @@
-function Invoke-MicrosoftExchangeCredentials
-{
-	param(
-		[System.Object]$Credential,
-		[string]$Environment
-	)
+function Invoke-MicrosoftExchangeConnection {
+    param (
+        [Parameter(Mandatory = $false)]
+        [SecureString]$Credential,
+        [Parameter(Mandatory = $false)]
+        [string]$Username,
+        [Parameter(Mandatory = $false)]
+        [string]$Environment = "default"
+    )
 
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{
-				$ExEnvironment = 'O365USGovGCCHigh' 
-			}
-			"USGovDoD"
-			{ 
-				$ExEnvironment = 'O365USGovDoD'
-			}
-			"GermanyCloud" 
-			{ 
-				$ExEnvironment = 'O365GermanyCloud' 
-			}
-			"China" 
-			{ 
-				$ExEnvironment = 'O365China' 
-			}
-			default 
-			{ 
-				$ExEnvironment = 'O365Default' 
-			}
-		}
+    # Map environment names to Exchange environment values
+    $environmentMap = @{
+        "USGovGCCHigh" = 'O365USGovGCCHigh'
+        "USGovDoD"     = 'O365USGovDoD'
+        "GermanyCloud" = 'O365GermanyCloud'
+        "China"        = 'O365China'
+        default        = 'O365Default'
+    }
 
-		Write-Host "Connecting to Microsoft Exchange..."
-		Connect-ExchangeOnline -ExchangeEnvironmentName $ExEnvironment -Credential $Credential -ShowBanner:$false -ErrorAction Stop
-		if ((Get-ConnectionInformation) -ne $null)
-		{
-			$OrgName = ((Get-AcceptedDomain |  Where-Object {  { $_.Default -eq 'True' } -and ($_.DomainName -like "*.onmicrosoft.com") -and ($_.DomainName -notlike "*mail.onmicrosoft.com") }).DomainName -split '.onmicrosoft.com')[0]
-			Write-Host "Connected to Microsoft Exchange!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $OrgName
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft Exchange' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft Exchange' -ErrorRecord $_
-		return $false
-	}
-	
-}
+    # Determine the Exchange environment
+    $ExEnvironment = $environmentMap[$Environment]
+    if (-not $ExEnvironment) {
+        $ExEnvironment = $environmentMap["default"]
+    }
 
-function Invoke-MicrosoftExchangeUsername
-{
-	param(
-		[string]$Username,
-		[string]$Environment
-	)
+    # Retry logic with a maximum of 3 attempts
+    $maxAttempts = 3
+    $attempt = 1
+    while ($attempt -le $maxAttempts) { 
+        try {
+            Write-Host "Connecting to Microsoft Exchange... (Attempt $attempt of $maxAttempts)"
 
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{
-				$ExEnvironment = 'O365USGovGCCHigh' 
-			}
-			"USGovDoD"
-			{ 
-				$ExEnvironment = 'O365USGovDoD'
-			}
-			"GermanyCloud" 
-			{ 
-				$ExEnvironment = 'O365GermanyCloud' 
-			}
-			"China" 
-			{ 
-				$ExEnvironment = 'O365China' 
-			}
-			default 
-			{ 
-				$ExEnvironment = 'O365Default' 
-			}
-		}
+            # Determine the method of connection based on provided parameters
+            if ($Credential) {
+                Connect-ExchangeOnline -ExchangeEnvironmentName $ExEnvironment -Credential $Credential -ShowBanner:$false -ErrorAction Stop | Out-Null
+            }
+            elseif ($Username) {
+                Connect-ExchangeOnline -ExchangeEnvironmentName $ExEnvironment -UserPrincipalName $Username -ShowBanner:$false -ErrorAction Stop | Out-Null
+            }
+            else {
+                Connect-ExchangeOnline -ExchangeEnvironmentName $ExEnvironment -ShowBanner:$false -ErrorAction Stop | Out-Null
+            }
 
-		Write-Host "Connecting to Microsoft Exchange..."
-		Connect-ExchangeOnline -ExchangeEnvironmentName $ExEnvironment -UserPrincipalName $Username -ShowBanner:$false
-		if ((Get-ConnectionInformation) -ne $null)
-		{
-			$OrgName = ((Get-AcceptedDomain |  Where-Object {  { $_.Default -eq 'True' } -and ($_.DomainName -like "*.onmicrosoft.com") -and ($_.DomainName -notlike "*mail.onmicrosoft.com") }).DomainName -split '.onmicrosoft.com')[0]
-			Write-Host "Connected to Microsoft Exchange!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $OrgName
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft Exchange' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft Exchange' -ErrorRecord $_
-		return $false
-	}
-	
-}
-
-function Invoke-MicrosoftExchangeLite
-{
-	param(
-		[string]$Environment
-	)
-
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{
-				$ExEnvironment = 'O365USGovGCCHigh' 
-			}
-			"USGovDoD"
-			{ 
-				$ExEnvironment = 'O365USGovDoD'
-			}
-			"GermanyCloud" 
-			{ 
-				$ExEnvironment = 'O365GermanyCloud' 
-			}
-			"China" 
-			{ 
-				$ExEnvironment = 'O365China' 
-			}
-			default 
-			{ 
-				$ExEnvironment = 'O365Default' 
-			}
-		}
-
-		Write-Host "Connecting to Microsoft Exchange..."
-		Connect-ExchangeOnline -ShowBanner:$false -ExchangeEnvironmentName $ExEnvironment
-		if ((Get-ConnectionInformation) -ne $null)
-		{
-			$OrgName = ((Get-AcceptedDomain |  Where-Object {  { $_.Default -eq 'True' } -and ($_.DomainName -like "*.onmicrosoft.com") -and ($_.DomainName -notlike "*mail.onmicrosoft.com") }).DomainName -split '.onmicrosoft.com')[0]
-			Write-Host "Connected to Microsoft Exchange!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $OrgName
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft Exchange' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft Exchange' -ErrorRecord $_
-		return $false
-	}
-	
+            # Verify the connection
+            if ($null -ne (Get-ConnectionInformation)) {
+                $OrgName = ((Get-AcceptedDomain | Where-Object { $_.Default -eq $true -and $_.DomainName -like "*.onmicrosoft.com" -and $_.DomainName -notlike "*mail.onmicrosoft.com" }).DomainName -split '.onmicrosoft.com')[0]
+                Write-Host "Connected to Microsoft Exchange!" -ForegroundColor DarkYellow -BackgroundColor Black
+                return $OrgName
+            }
+            else {
+                throw "Failed to establish a valid connection with Microsoft Exchange."
+            }
+        }
+        catch {
+            Write-Warning "Attempt $attempt failed: $_"
+            if ($attempt -ge $maxAttempts) {
+                Write-Error "Maximum number of retry attempts reached. Unable to connect to Microsoft Exchange."
+                throw $_
+            }
+            Start-Sleep -Seconds 5  # Wait before retrying
+			$attempt++
+        }
+    }
 }

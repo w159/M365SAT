@@ -1,157 +1,90 @@
-function Invoke-MicrosoftTeamsCredentials
-{
-	param(
-		[System.Object]$Credential,
-		[string]$Environment
-	)
+function Invoke-MicrosoftTeamsConnection {
+    param (
+        [Parameter(Mandatory = $false)]
+        [SecureString]$Credential,
+        [Parameter(Mandatory = $false)]
+        [string]$Username,
+        [Parameter(Mandatory = $false)]
+        [string]$Environment = "default"
+    )
 
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams -TeamsEnvironmentName TeamsGCCH -Credential $Credential -ErrorAction Stop" 
-			}
-			"USGovDoD" 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams -TeamsEnvironmentName TeamsDoD -Credential $Credential  -ErrorAction Stop"
-			}
-			"GermanyCloud" 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams -Credential $Credential -ErrorAction Stop"
-			}
-			"China" 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams -TeamsEnvironmentName TeamsChina -Credential $Credential -ErrorAction Stop"
-			}
-			default 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams -Credential $Credential"
-			}
-		}
+    # Map environment names to Teams environment values
+    $environmentMap = @{
+        "USGovGCCHigh" = @{
+            EnvironmentName = "TeamsGCCH"
+        }
+        "USGovDoD"     = @{
+            EnvironmentName = "TeamsDoD"
+        }
+        "GermanyCloud" = @{
+            EnvironmentName = $null
+        }
+        "China"        = @{
+            EnvironmentName = "TeamsChina"
+        }
+        default        = @{
+            EnvironmentName = $null
+        }
+    }
 
-		Write-Host "Connecting to Microsoft Teams Powershell..."
-		Invoke-Expression $TmsEnvironment
-		if ($null -ne (Get-CsTenant))
-		{
-			Write-Host "Connected to Microsoft Teams Powershell!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $true
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft Teams Powershell' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft Teams Powershell' -ErrorRecord $_
-		return $false
-	}
-	
-}
+    # Determine the Teams environment
+    $selectedEnv = $environmentMap[$Environment]
+    if (-not $selectedEnv) {
+        $selectedEnv = $environmentMap["default"]
+    }
 
-function Invoke-MicrosoftTeamsUsername
-{
-	param(
-		[string]$Username,
-		[string]$Environment
-	)
+    $TmsEnvironmentName = $selectedEnv.EnvironmentName
 
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams -TeamsEnvironmentName TeamsGCCH" 
-			}
-			"USGovDoD" 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams -TeamsEnvironmentName TeamsDoD"
-			}
-			"GermanyCloud" 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams"
-			}
-			"China" 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams -TeamsEnvironmentName TeamsChina"
-			}
-			default 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams"
-			}
-		}
+    # Retry logic with a maximum of 3 attempts
+    $maxAttempts = 3
+    $attempt = 1
+    while ($attempt -le $maxAttempts) {
+        try {
+            Write-Host "Connecting to Microsoft Teams... (Attempt $attempt of $maxAttempts)"
 
-		Write-Host "Connecting to Microsoft Teams Powershell..."
-		Invoke-Expression $TmsEnvironment
-		if ($null -ne (Get-CsTenant))
-		{
-			Write-Host "Connected to Microsoft Teams Powershell!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $true
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft Teams Powershell' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft Teams Powershell' -ErrorRecord $_
-		return $false
-	}
-	
-}
+            # Determine the method of connection based on provided parameters
+            if ($Credential) {
+                if ($TmsEnvironmentName) {
+                    Connect-MicrosoftTeams -TeamsEnvironmentName $TmsEnvironmentName -Credential $Credential -ErrorAction Stop | Out-Null
+                }
+                else {
+                    Connect-MicrosoftTeams -Credential $Credential -ErrorAction Stop | Out-Null
+                }
+            }
+            elseif ($Username) {
+                if ($TmsEnvironmentName) {
+                    Connect-MicrosoftTeams -TeamsEnvironmentName $TmsEnvironmentName -UserPrincipalName $Username -ErrorAction Stop | Out-Null
+                }
+                else {
+                    Connect-MicrosoftTeams -AccountId $Username -ErrorAction Stop | Out-Null
+                }
+            }
+            else {
+                if ($TmsEnvironmentName) {
+                    Connect-MicrosoftTeams -TeamsEnvironmentName $TmsEnvironmentName -ErrorAction Stop | Out-Null
+                }
+                else {
+                    Connect-MicrosoftTeams -ErrorAction Stop | Out-Null
+                }
+            }
 
-function Invoke-MicrosoftTeamsLite
-{
-	param(
-		[string]$Environment
-	)
-
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams -TeamsEnvironmentName TeamsGCCH" 
-			}
-			"USGovDoD" 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams -TeamsEnvironmentName TeamsDoD"
-			}
-			"GermanyCloud" 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams"
-			}
-			"China" 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams -TeamsEnvironmentName TeamsChina"
-			}
-			default 
-			{ 
-				$TmsEnvironment = "Connect-MicrosoftTeams"
-			}
-		}
-
-		Write-Host "Connecting to Microsoft Teams Powershell..."
-		Invoke-Expression $TmsEnvironment
-		if ($null -ne (Get-CsTenant))
-		{
-			Write-Host "Connected to Microsoft Teams Powershell!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $true
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft Teams Powershell' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft Teams Powershell' -ErrorRecord $_
-		return $false
-	}
-	
+            # Verify the connection
+            if ($null -ne (Get-CsTenant)) {
+                Write-Host "Connected to Microsoft Teams!" -ForegroundColor DarkYellow -BackgroundColor Black
+                return $true
+            }
+            else {
+                throw "Failed to establish a valid context with Microsoft Teams."
+            }
+        }
+        catch {
+            Write-Warning "Attempt $attempt failed: $_"
+            if ($attempt -ge $maxAttempts) {
+                Write-Error "Maximum number of retry attempts reached. Unable to connect to Microsoft Teams."
+                throw $_
+            }
+            Start-Sleep -Seconds 5  # Wait before retrying
+			$attempt++
+        }
+    }
 }

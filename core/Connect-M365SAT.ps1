@@ -1,294 +1,138 @@
-<# Initiates connections to modules #>
-<# Due to issues with Powershell 7 you need to additionally import modules in compatibility mode in order to make them work correctly #>
-function Connect-M365SAT
-{
-	param(
-		[string]$Username, 
-		[SecureString]$Password, 
-		[String[]]$Modules, 
-		[string]$Environment
-	)
+function Connect-M365SAT {
+    param (
+        [Parameter(Mandatory = $false)]
+        [string]$Username,
 
-	Import-Module PoShLog
-	. $PSScriptRoot\m365connectors\Connect-MicrosoftAzure.ps1
-	. $PSScriptRoot\m365connectors\Connect-MicrosoftExchange.ps1
-	. $PSScriptRoot\m365connectors\Connect-MicrosoftGraph.ps1
-	. $PSScriptRoot\m365connectors\Connect-MicrosoftSecurityCompliance.ps1
-	. $PSScriptRoot\m365connectors\Connect-MicrosoftSharepoint.ps1
-	. $PSScriptRoot\m365connectors\Connect-MicrosoftTeams.ps1
-	
-	# Initialize Variables
-	[bool]$AzureAuth = $false
-	[bool]$GraphAuth = $false
-	[bool]$SecurityComplianceAuth = $false
-	[bool]$ExchangeAuth = $false
-	[bool]$SharepointAuth = $false
-	[bool]$TeamsAuth = $false
+        [Parameter(Mandatory = $false)]
+        [SecureString]$Password,
 
-	# The new LoginByWam and LoginExperienceV2 does not work properly thus need to be disabled in order to function properly in PowerShell 5 and 7.
-	Update-AzConfig -EnableLoginByWam $false -LoginExperienceV2 'Off' #It will be enabled back once the audit is done.
+        [Parameter(Mandatory = $true)]
+        [String[]]$Modules,
 
-	if ($PSVersionTable.PSVersion.Major -igt 5)
-		{
-			Import-Module Microsoft.Online.SharePoint.PowerShell -UseWindowsPowershell
-		}
+        [Parameter(Mandatory = $false)]
+        [string]$Environment = "default"
+    )
 
-	if ($Modules.Contains("All"))
-	{
-		[Array]$Modules = @("Azure", "Exchange", "Office365", "Sharepoint", "Teams")
-	}	
-	if (![string]::IsNullOrEmpty($Password))
-	{
-		#Authentication Username + Password 
-		#Store Credentials in Variable
-		try
-		{
-			[securestring]$SecuredPassword = ConvertTo-SecureString -AsPlainText $Password -Force
-			[pscredential]$Credential = New-Object System.Management.Automation.PSCredential $UserName, $SecuredPassword
-		}
-		catch
-		{
-			Write-ErrorLog "Could Not Convert Credentials!"
-		}
-	}
+    # Import required modules for logging and connectors
+    Import-Module PoShLog
+    . $PSScriptRoot\m365connectors\Connect-MicrosoftAzure.ps1
+    . $PSScriptRoot\m365connectors\Connect-MicrosoftExchange.ps1
+    . $PSScriptRoot\m365connectors\Connect-MicrosoftGraph.ps1
+    . $PSScriptRoot\m365connectors\Connect-MicrosoftSecurityCompliance.ps1
+    . $PSScriptRoot\m365connectors\Connect-MicrosoftSharepoint.ps1
+    . $PSScriptRoot\m365connectors\Connect-MicrosoftTeams.ps1
 
-	# Make Sure Sharepoint does not get authenticated first, because Sharepoint depends it's name on Microsoft Graph or Microsoft Exchange to get the default domainname automatically.
-	switch ($Modules) {
-		"Azure" {
-			if (![string]::IsNullOrEmpty($Password)){
-				$AzureConnection = Invoke-MicrosoftAzureCredentials -Credential $Credential -Environment $Environment
-				if (!$AzureConnection)
-				{
-					break
-				}else{
-					$AzureAuth = $true
-				}
-				$GraphOrgName = Invoke-MicrosoftGraphCredentials -Environment $Environment
-				if ([string]::IsNullOrEmpty($GraphOrgName))
-				{
-					break
-				}else{
-					$GraphAuth = $true
-				}
-			}else{
-				$AzureConnection = Invoke-MicrosoftAzureUsername -Username $UserName -Environment $Environment
-				if (!$AzureConnection)
-				{
-					break
-				}else{
-					$AzureAuth = $true
-				}
-				$GraphOrgName = Invoke-MicrosoftGraphUsername -Environment $Environment
-				if ([string]::IsNullOrEmpty($GraphOrgName))
-				{
-					break
-				}else{
-					$GraphAuth = $true
-				}
-			}
-		}
-		"Exchange" {	
-			if (![string]::IsNullOrEmpty($Password)){
-				if ($GraphAuth -ne $true){
-					$GraphOrgName = Invoke-MicrosoftGraphUsername -Environment $Environment
-					if ([string]::IsNullOrEmpty($GraphOrgName))
-					{
-						break
-					}else{
-						$GraphAuth = $true
-					}
-				}
-				$MSCConnection = Invoke-MicrosoftSecurityComplianceCredentials -Credential $Credential -Environment $Environment
-				if (!$MSCConnection)
-				{
-					break
-				}else{
-					$SecurityComplianceAuth = $true
-				}
-				$ExchangeOrgName = Invoke-MicrosoftExchangeCredentials -Credential $Credential -Environment $Environment
-				if ([string]::IsNullOrEmpty($ExchangeOrgName))
-				{
-					break
-				}else{
-					$ExchangeAuth = $True
-				}
-			}else{
-				if ($GraphAuth -ne $true){
-					$GraphOrgName = Invoke-MicrosoftGraphUsername -Environment $Environment
-					if ([string]::IsNullOrEmpty($GraphOrgName))
-					{
-						break
-					}else{
-						$GraphAuth = $true
-					}
-				}
-				$MSCConnection = Invoke-MicrosoftSecurityComplianceUsername -Username $UserName -Environment $Environment
-				if (!$MSCConnection)
-				{
-					break
-				}else{
-					$SecurityComplianceAuth = $true
-				}
-				$ExchangeOrgName = Invoke-MicrosoftExchangeUsername -Username $UserName -Environment $Environment
-				if ([string]::IsNullOrEmpty($ExchangeOrgName))
-				{
-					break
-				}else{
-					$ExchangeAuth = $True
-				}
-			}
-		}
-		"Office365"{
-			if ($AzureAuth -ne $true){
-				if (![string]::IsNullOrEmpty($Password)){
-					$AzureConnection = Invoke-MicrosoftAzureCredentials -Credential $Credential -Environment $Environment
-					if (!$AzureConnection)
-					{
-						break
-					}else{
-						$AzureAuth = $true
-					}
-				}else{
-					$AzureConnection = Invoke-MicrosoftAzureUsername -Username $UserName -Environment $Environment
-					if (!$AzureConnection)
-					{
-						break
-					}else{
-						$AzureAuth = $true
-					}
-				}
-			}
-			if ($GraphAuth -ne $true){
-				if (![string]::IsNullOrEmpty($Password)){
-					$GraphOrgName = Invoke-MicrosoftGraphCredentials -Environment $Environment
-					if ([string]::IsNullOrEmpty($GraphOrgName))
-					{
-						break
-					}else{
-						$GraphAuth = $true
-					}
-				}else{
-					$GraphOrgName = Invoke-MicrosoftGraphUsername -Environment $Environment
-					if ([string]::IsNullOrEmpty($GraphOrgName))
-					{
-						break
-					}else{
-						$GraphAuth = $true
-					}
-				}
-			}
-		}
-		"Sharepoint"{
-			if (![string]::IsNullOrEmpty($Password)){
-				if ($GraphAuth -ne $true){
-					$GraphOrgName = Invoke-MicrosoftGraphCredentials -Environment $Environment #Microsoft Sharepoint depends on some the Organization Name provided by Microsoft Graph and cannot be provided by Sharepoint itself.
-					if ([string]::IsNullOrEmpty($GraphOrgName))
-					{
-						break
-					}
-					else
-					{
-						$GraphAuth = $true
-					}
-				}
-				$TenantName = (((Get-MgOrganization).VerifiedDomains |  Where-Object { ($_.Name -like "*.onmicrosoft.com") -and ($_.Name -notlike "*mail.onmicrosoft.com") }).Name -split '.onmicrosoft.com')[0]
-				$Module = Get-Module PnP.PowerShell -ListAvailable
-				if ([string]::IsNullOrEmpty($Module)){
-					$SharepointConnection = Invoke-MicrosoftSharepointCredentials -TenantName $TenantName -Credential $Credential -Environment $Environment
-					if (!$SharepointConnection)
-					{
-						break
-					}else{
-						$SharepointAuth = $true
-					}
-				}
-				else
-				{
-					$SharepointConnection = Invoke-MicrosoftSharepointPnPCredentials -TenantName $TenantName -Credential $Credential -Environment $Environment
-					if (!$SharepointConnection)
-					{
-						break
-					}else{
-						$SharepointAuth = $true
-					}
-				}
-				
-			}else{
-				if ($GraphAuth -ne $true){
-					$GraphOrgName = Invoke-MicrosoftGraphCredentials -Environment $Environment
-					if ([string]::IsNullOrEmpty($GraphOrgName))
-					{
-						break
-					}else{
-						$GraphAuth = $true
-					}
-				}
-				$TenantName = (((Get-MgOrganization).VerifiedDomains |  Where-Object { ($_.Name -like "*.onmicrosoft.com") -and ($_.Name -notlike "*mail.onmicrosoft.com") }).Name -split '.onmicrosoft.com')[0]
-				$Module = Get-Module PnP.PowerShell -ListAvailable
-				if ([string]::IsNullOrEmpty($Module)){
-					$SharepointConnection = Invoke-MicrosoftSharepointUsername -TenantName $TenantName -Credential $Credential -Environment $Environment
-					if (!$SharepointConnection)
-					{
-						break
-					}else{
-						$SharepointAuth = $true
-					}
-				}
-				else
-				{
-					$SharepointConnection = Invoke-MicrosoftSharepointPnPUsername -TenantName $TenantName -Environment $Environment
-					if (!$SharepointConnection)
-					{
-						break
-					}else{
-						$SharepointAuth = $true
-					}
-				}
-			}
-		}
-		"Teams"{
-			if (![string]::IsNullOrEmpty($Password)){
-				if($GraphAuth -ne $true){
-					$GraphOrgName = Invoke-MicrosoftGraphCredentials -Environment $Environment #Microsoft Teams does not output the original default domainname, thus we invoke Graph for this as well
-					if ([string]::IsNullOrEmpty($GraphOrgName))
-					{
-						break
-					}else{
-						$GraphAuth = $true
-					}
-				}
-				$TeamsConnection = Invoke-MicrosoftTeamsCredentials -Credential $Credential -Environment $Environment
-				if (!$TeamsConnection)
-				{
-					break
-				}else{
-					$TeamsAuth = $true
-				}
-			}else{
-				if($GraphAuth -ne $true){
-					$GraphOrgName = Invoke-MicrosoftGraphUsername -Environment $Environment #Microsoft Teams does not output the original default domainname, thus we invoke Graph for this as well
-					if ([string]::IsNullOrEmpty($GraphOrgName))
-					{
-						break
-					}else{
-						$GraphAuth = $true
-					}
-				}
-				$TeamsConnection = Invoke-MicrosoftTeamsUsername -Username $UserName -Environment $Environment
-				if (!$TeamsConnection)
-				{
-					break
-				}else{
-					$TeamsAuth = $true
-				}
-			}
-		}
-	}
-	if ($null -ne $ExchangeOrgName){
-		$ExchangeOrgName = $OrgName
-	}else{
-		$GraphOrgName = $OrgName
-	}
-		return $OrgName
+    # Initialize variables
+    $OrgName = $null
+    $Credential = $null
+
+    # Disable WAM and LoginExperienceV2 for Azure module compatibility
+    Update-AzConfig -EnableLoginByWam $false -LoginExperienceV2 'Off'
+
+    # Import SharePoint module in PowerShell 7 (fallback for PnP.PowerShell)
+    if ($PSVersionTable.PSVersion.Major -ge 7) {
+        Import-Module Microsoft.Online.SharePoint.PowerShell -UseWindowsPowerShell
+    }
+
+    # Handle credentials
+    if (![string]::IsNullOrEmpty($Password)) {
+        try {
+            $Credential = New-Object System.Management.Automation.PSCredential ($Username, $Password)
+        }
+        catch {
+            Write-ErrorLog "Could not convert credentials!"
+            $Credential = $null
+        }
+    }
+
+    # Ensure 'All' is expanded to all modules
+    if ($Modules.Contains("All")) {
+        $Modules = @("Teams", "Azure", "Graph", "Exchange", "SecurityCompliance", "Sharepoint")
+    }
+
+    # Authentication flow: Teams -> Azure -> Graph -> Exchange -> SecurityCompliance -> Sharepoint
+    foreach ($module in $Modules) {
+        switch ($module) {
+            "Teams" {
+                # Authenticate Teams (requires Graph for organization name)
+                if (-not $OrgName) {
+                    $OrgName = Invoke-MicrosoftGraphConnection -Credential $Credential -Environment $Environment
+                    if ([string]::IsNullOrEmpty($OrgName)) {
+                        throw "Failed to authenticate Microsoft Graph, which is required for Teams."
+                    }
+                }
+                $teamsAuth = Invoke-MicrosoftTeamsConnection -Username $Username -Credential $Credential -Environment $Environment
+                if (-not $teamsAuth) {
+                    throw "Failed to authenticate Microsoft Teams."
+                }
+            }
+
+            "Azure" {
+                # Authenticate Azure
+                $azureAuth = Invoke-MicrosoftAzureConnection -Username $Username -Credential $Credential -Environment $Environment
+                if (-not $azureAuth) {
+                    throw "Failed to authenticate Microsoft Azure."
+                }
+            }
+
+            "Graph" {
+                # Authenticate Graph (if not already authenticated via Teams)
+                if ([string]::IsNullOrEmpty($OrgName)) {
+                    $OrgName = Invoke-MicrosoftGraphConnection -Credential $Credential -Environment $Environment
+                    if ([string]::IsNullOrEmpty($OrgName)) {
+                        throw "Failed to authenticate Microsoft Graph."
+                    }
+                }
+            }
+
+            "Exchange" {
+                # Authenticate Exchange (requires Graph for organization name)
+                if ([string]::IsNullOrEmpty($OrgName)) {
+                    $OrgName = Invoke-MicrosoftGraphConnection -Credential $Credential -Environment $Environment
+                    if ([string]::IsNullOrEmpty($OrgName)) {
+                        throw "Failed to authenticate Microsoft Graph, which is required for Exchange."
+                    }
+                }
+                $exchangeAuth = Invoke-MicrosoftExchangeConnection -Username $Username -Credential $Credential -Environment $Environment
+                if (-not $exchangeAuth) {
+                    throw "Failed to authenticate Microsoft Exchange."
+                }
+            }
+
+            "SecurityCompliance" {
+                # Authenticate Security & Compliance (requires Graph for organization name)
+                if ([string]::IsNullOrEmpty($OrgName)) {
+                    $OrgName = Invoke-MicrosoftGraphConnection -Credential $Credential -Environment $Environment
+                    if ([string]::IsNullOrEmpty($OrgName)) {
+                        throw "Failed to authenticate Microsoft Graph, which is required for Security & Compliance."
+                    }
+                }
+                $securityComplianceAuth = Invoke-MicrosoftSecurityComplianceConnection -Username $Username -Credential $Credential -Environment $Environment
+                if (-not $securityComplianceAuth) {
+                    throw "Failed to authenticate Microsoft Security & Compliance."
+                }
+            }
+
+            "Sharepoint" {
+                # Authenticate SharePoint (requires Graph for organization name)
+                if ([string]::IsNullOrEmpty($OrgName)) {
+                    $OrgName = Invoke-MicrosoftGraphConnection -Credential $Credential -Environment $Environment
+                    if ([string]::IsNullOrEmpty($OrgName)) {
+                        throw "Failed to authenticate Microsoft Graph, which is required for SharePoint."
+                    }
+                }
+                $sharepointAuth = Invoke-MicrosoftSharepointSPOServiceConnection -TenantName $OrgName -Credential $Credential -Environment $Environment
+                if (-not $sharepointAuth) {
+                    throw "Failed to authenticate Microsoft SharePoint."
+                }
+            }
+        }
+    }
+
+    # Ensure at least one valid OrgName is returned (from Graph or Exchange)
+    if ([string]::IsNullOrEmpty($OrgName)) {
+        throw "Failed to retrieve a valid organization name from any module."
+    }
+
+    return $OrgName
 }
-	

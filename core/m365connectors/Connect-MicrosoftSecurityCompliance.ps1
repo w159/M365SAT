@@ -1,176 +1,82 @@
-function Invoke-MicrosoftSecurityComplianceCredentials
-{
-	param(
-		[System.Object]$Credential,
-		[string]$Environment
-	)
+function Invoke-MicrosoftSecurityComplianceConnection {
+    param (
+        [Parameter(Mandatory = $false)]
+        [SecureString]$Credential,
+        [Parameter(Mandatory = $false)]
+        [string]$Username,
+        [Parameter(Mandatory = $false)]
+        [string]$Environment = "default"
+    )
 
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{ 
-				$IPPSEnvironment = 'https://ps.compliance.protection.office365.us/powershell-liveid/'
-				$AADUri = 'https://login.microsoftonline.us/common' 
-			}
-			"USGovDoD" 
-			{ 
-				$IPPSEnvironment = 'https://l5.ps.compliance.protection.office365.us/powershell-liveid/'
-				$AADUri = 'https://login.microsoftonline.us/common' 
-			}
-			"GermanyCloud" 
-			{ 
-				$IPPSEnvironment = 'https://ps.compliance.protection.outlook.com/powershell-liveid/' 
-				$AADUri = 'https://login.microsoftonline.com/common' 
-			}
-			"China" 
-			{ 
-				$IPPSEnvironment = 'https://ps.compliance.protection.partner.outlook.cn/powershell-liveid'
-				$AADUri = 'https://login.chinacloudapi.cn/common' 
-			}
-			default 
-			{ 
-				$IPPSEnvironment = 'https://ps.compliance.protection.outlook.com/powershell-liveid/'
-				$AADUri = 'https://login.microsoftonline.com/common' 
-			}
-		}
+    # Map environment names to Security & Compliance environment values
+    $environmentMap = @{
+        "USGovGCCHigh" = @{
+            IPPSEnvironment = 'https://ps.compliance.protection.office365.us/powershell-liveid/'
+            AADUri          = 'https://login.microsoftonline.us/common'
+        }
+        "USGovDoD"     = @{
+            IPPSEnvironment = 'https://l5.ps.compliance.protection.office365.us/powershell-liveid/'
+            AADUri          = 'https://login.microsoftonline.us/common'
+        }
+        "GermanyCloud" = @{
+            IPPSEnvironment = 'https://ps.compliance.protection.outlook.com/powershell-liveid/'
+            AADUri          = 'https://login.microsoftonline.com/common'
+        }
+        "China"        = @{
+            IPPSEnvironment = 'https://ps.compliance.protection.partner.outlook.cn/powershell-liveid'
+            AADUri          = 'https://login.chinacloudapi.cn/common'
+        }
+        default        = @{
+            IPPSEnvironment = 'https://ps.compliance.protection.outlook.com/powershell-liveid/'
+            AADUri          = 'https://login.microsoftonline.com/common'
+        }
+    }
 
-		Write-Host "Connecting to Microsoft Security & Compliance..."
-		Connect-IPPSSession -ConnectionUri $IPPSEnvironment -AzureADAuthorizationEndpointUri $AADUri -Credential $Credential -ShowBanner:$false -ErrorAction Stop
- 		$Result = Get-PolicyConfig
-		if ($?)
-		{
-			Write-Host "Connected to Microsoft Security & Compliance!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $true
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft Security & Compliance' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft Security & Compliance' -ErrorRecord $_
-		return $false
-	}
-	
-}
+    # Determine the Security & Compliance environment
+    $selectedEnv = $environmentMap[$Environment]
+    if (-not $selectedEnv) {
+        $selectedEnv = $environmentMap["default"]
+    }
 
-function Invoke-MicrosoftSecurityComplianceUsername
-{
-	param(
-		[string]$Username,
-		[string]$Environment
-	)
+    $IPPSEnvironment = $selectedEnv.IPPSEnvironment
+    $AADUri = $selectedEnv.AADUri
 
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{ 
-				$IPPSEnvironment = 'https://ps.compliance.protection.office365.us/powershell-liveid/'
-				$AADUri = 'https://login.microsoftonline.us/common' 
-			}
-			"USGovDoD" 
-			{ 
-				$IPPSEnvironment = 'https://l5.ps.compliance.protection.office365.us/powershell-liveid/'
-				$AADUri = 'https://login.microsoftonline.us/common' 
-			}
-			"GermanyCloud" 
-			{ 
-				$IPPSEnvironment = 'https://ps.compliance.protection.outlook.com/powershell-liveid/' 
-				$AADUri = 'https://login.microsoftonline.com/common' 
-			}
-			"China" 
-			{ 
-				$IPPSEnvironment = 'https://ps.compliance.protection.partner.outlook.cn/powershell-liveid'
-				$AADUri = 'https://login.chinacloudapi.cn/common' 
-			}
-			default 
-			{ 
-				$IPPSEnvironment = 'https://ps.compliance.protection.outlook.com/powershell-liveid/'
-				$AADUri = 'https://login.microsoftonline.com/common' 
-			}
-		}
+    # Retry logic with a maximum of 3 attempts
+    $maxAttempts = 3
+    $attempt = 1
+    while ($attempt -le $maxAttempts) {
+        try {
+            Write-Host "Connecting to Microsoft Security & Compliance... (Attempt $attempt of $maxAttempts)"
 
-		Write-Host "Connecting to Microsoft Security & Compliance..."
-		Connect-IPPSSession -ConnectionUri $IPPSEnvironment -AzureADAuthorizationEndpointUri $AADUri -UserPrincipalName $Username -ShowBanner:$false -ErrorAction Stop
-		$Result = Get-PolicyConfig
-		if ($?)
-		{
-			Write-Host "Connected to Microsoft Security & Compliance!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $true
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft Security & Compliance' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft Security & Compliance' -ErrorRecord $_
-		return $false
-	}
-	
-}
+            # Determine the method of connection based on provided parameters
+            if ($Credential) {
+                Connect-IPPSSession -ConnectionUri $IPPSEnvironment -AzureADAuthorizationEndpointUri $AADUri -Credential $Credential -ShowBanner:$false -ErrorAction Stop | Out-Null
+            }
+            elseif ($Username) {
+                Connect-IPPSSession -ConnectionUri $IPPSEnvironment -AzureADAuthorizationEndpointUri $AADUri -UserPrincipalName $Username -ShowBanner:$false -ErrorAction Stop | Out-Null
+            }
+            else {
+                Connect-IPPSSession -ConnectionUri $IPPSEnvironment -AzureADAuthorizationEndpointUri $AADUri -ShowBanner:$false -ErrorAction Stop | Out-Null
+            }
 
-function Invoke-MicrosoftSecurityComplianceLite
-{
-	param(
-		[string]$Environment
-	)
-
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{ 
-				$IPPSEnvironment = 'https://ps.compliance.protection.office365.us/powershell-liveid/'
-				$AADUri = 'https://login.microsoftonline.us/common' 
-			}
-			"USGovDoD" 
-			{ 
-				$IPPSEnvironment = 'https://l5.ps.compliance.protection.office365.us/powershell-liveid/'
-				$AADUri = 'https://login.microsoftonline.us/common' 
-			}
-			"GermanyCloud" 
-			{ 
-				$IPPSEnvironment = 'https://ps.compliance.protection.outlook.com/powershell-liveid/' 
-				$AADUri = 'https://login.microsoftonline.com/common' 
-			}
-			"China" 
-			{ 
-				$IPPSEnvironment = 'https://ps.compliance.protection.partner.outlook.cn/powershell-liveid'
-				$AADUri = 'https://login.chinacloudapi.cn/common' 
-			}
-			default 
-			{ 
-				$IPPSEnvironment = 'https://ps.compliance.protection.outlook.com/powershell-liveid/'
-				$AADUri = 'https://login.microsoftonline.com/common' 
-			}
-		}
-
-		Write-Host "Connecting to Microsoft Security & Compliance..."
-		Connect-IPPSSession -ConnectionUri $IPPSEnvironment -AzureADAuthorizationEndpointUri $AADUri -ShowBanner:$false -ErrorAction Stop
-		$Result = Get-PolicyConfig
-		if ($?)
-		{
-			$OrgName = ((Get-AcceptedDomain |  Where-Object {  { $_.Default -eq 'True' } -and ($_.DomainName -like "*.onmicrosoft.com") -and ($_.DomainName -notlike "*mail.onmicrosoft.com") }).DomainName -split '.onmicrosoft.com')[0]
-			Write-Host "Connected to Microsoft Security & Compliance!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $OrgName
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft Security & Compliance' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft Security & Compliance' -ErrorRecord $_
-		return $false
-	}
-	
+            # Verify the connection
+            $Result = Get-PolicyConfig
+            if ($?) {
+                Write-Host "Connected to Microsoft Security & Compliance!" -ForegroundColor DarkYellow -BackgroundColor Black
+                return $true
+            }
+            else {
+                throw "Failed to establish a valid connection with Microsoft Security & Compliance."
+            }
+        }
+        catch {
+            Write-Warning "Attempt $attempt failed: $_"
+            if ($attempt -ge $maxAttempts) {
+                Write-Error "Maximum number of retry attempts reached. Unable to connect to Microsoft Security & Compliance."
+                throw $_
+            }
+            Start-Sleep -Seconds 5  # Wait before retrying
+			$attempt++
+        }
+    }
 }
