@@ -44,7 +44,7 @@ function Invoke-MicrosoftTeamsConnection {
 
             # Determine the method of connection based on provided parameters
             if ($Credential) {
-                if ($TmsEnvironmentName) {
+                if ($null -ne $TmsEnvironmentName) {
                     Connect-MicrosoftTeams -TeamsEnvironmentName $TmsEnvironmentName -Credential $Credential -ErrorAction Stop | Out-Null
                 }
                 else {
@@ -52,15 +52,15 @@ function Invoke-MicrosoftTeamsConnection {
                 }
             }
             elseif ($Username) {
-                if ($TmsEnvironmentName) {
-                    Connect-MicrosoftTeams -TeamsEnvironmentName $TmsEnvironmentName -UserPrincipalName $Username -ErrorAction Stop | Out-Null
+                if ($null -ne $TmsEnvironmentName) {
+                    Connect-MicrosoftTeams -TeamsEnvironmentName $TmsEnvironmentName -ErrorAction Stop | Out-Null
                 }
                 else {
                     Connect-MicrosoftTeams -ErrorAction Stop | Out-Null
                 }
             }
             else {
-                if ($TmsEnvironmentName) {
+                if ($null -ne $TmsEnvironmentName) {
                     Connect-MicrosoftTeams -TeamsEnvironmentName $TmsEnvironmentName -ErrorAction Stop | Out-Null
                 }
                 else {
