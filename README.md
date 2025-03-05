@@ -14,9 +14,11 @@ Next Release Version: v3.1
     <img src=x width="800"> 
   </p>
 </div>
-
-
-[![OS](https://img.shields.io/badge/OS-Windows-blue?style=flat&logo=Windows)](https://www.microsoft.com/en-gb/windows/?r=1)
+<br>
+Compatible With:
+[![Windows](https://custom-icon-badges.demolab.com/badge/Windows-0078D6?logo=windows11&logoColor=white)](#)
+[![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)](#)
+[![macOS](https://img.shields.io/badge/macOS-000000?logo=apple&logoColor=F0F0F0)](#)
 [![Docker](https://img.shields.io/badge/Docker-Coming_Soon-red.svg?style=flat&logo=docker)](https://github.com/Karmakstylez/M365SAT)
 
 
@@ -62,10 +64,10 @@ The following modules need to be installed in order to make M365SAT work:
 -	PoShLog
 
 #### 3.1.1 Installation PowerShell 7.x.x (Windows)
-PowerShell 7.x works with all the latest modules.
+Note: *There were several reports that Microsoft Exchange was not working properly at the latest version due to Web Account Manager (WAM). A workaround is to install ExchangeOnlineManagement version 3.6.0 to force using the legacy browser authentication*
 ```
 Install-Module -Name Az
-Install-Module -Name ExchangeOnlineManagement
+Install-Module -Name ExchangeOnlineManagement -RequiredVersion 3.6.0
 Install-Module -Name Microsoft.Online.SharePoint.PowerShell
 Install-Module -Name Microsoft.Graph -AllowClobber -Force
 Install-Module -Name Microsoft.Graph.Beta -AllowClobber -Force
@@ -74,7 +76,7 @@ Install-Module -Name PoShLog
 ```
 
 #### 3.1.2 Installation PowerShell 5.1 (Windows)
-Note: *Microsoft PowerShell 5.1 does not work properly with Az.Accounts 3.x.x or later, due to the new mechanism of authentication it conflicts with the ExchangeOnlineManagement modules. 2.19.0 is the latest working version with PowerShell 5.1.*
+Note: *I am investigating several issues with PowerShell 5.1.*
 ```
 Install-Module -Name Az
 Install-Module -Name ExchangeOnlineManagement -AllowClobber -Force
