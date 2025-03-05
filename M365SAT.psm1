@@ -113,9 +113,8 @@ function Get-M365SATReport
 		[ValidateSet('HTML', 'CSV', 'XML', 'CSMS', IgnoreCase = $true)]
 		[string]$reportType = "HTML",
 		[Parameter(Mandatory = $false,
-			HelpMessage = 'Log Message Level: Verbose / Debug / Info / Warning / Error / Fatal')]
-		[ValidateSet('Verbose', 'Debug', 'Info', 'Warning', 'Error', 'Fatal', IgnoreCase = $true)]
-		[string]$AllowLogging = "Warning",
+			HelpMessage = 'Enables Logging with PoSHLogger')]
+		[switch]$AllowLogging,
 		[Parameter(Mandatory = $false,
 			HelpMessage = 'Skips Module Updates (Experimental)')]
 		[switch]$SkipChecks,
@@ -130,7 +129,6 @@ function Get-M365SATReport
 	$tempfiles = @()
 	$MaximumFunctionCount = 32768
 	$RootDirectory = "$PSScriptRoot"
-	$LogDirectory = "$PSScriptRoot\log"
 	$Directory = "$PSScriptRoot\inspectors"
 	$DateNow = (Get-Date -Format hhmm-ddMMyyyy)
 	
@@ -160,6 +158,7 @@ function Get-M365SATReport
 	If(!(Test-Path -PathType Container $OutPath))
 	{
       New-Item -ItemType Directory -Force -Path $OutPath
+	  New-Item -ItemType Directory -Force -Path "$OutPath\log"
 	}
 
 	# Import the PoShLog Module
@@ -169,7 +168,9 @@ function Get-M365SATReport
 	Banner
 	
 	# Create a New Logger
-	Invoke-M365SATLogger -AllowLogging $AllowLogging -LogDirectory $LogDirectory
+	if ($AllowLogging.IsPresent){
+		Invoke-M365SATLogger -RootDirectory $RootDirectory
+	}
 	
 	Write-Host "$(Get-Date): Checking Existence SkipChecks Parameter..."
 	if (!$SkipChecks.IsPresent)

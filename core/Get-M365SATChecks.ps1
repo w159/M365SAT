@@ -83,7 +83,9 @@ function Get-M365SATLocalChecks($Directory, $EnvironmentType, $Modules, $License
 		switch ($EnvironmentType) {
 			"M365" {  
 				#Unblock All Files
-				Get-ChildItem -Path $Directory\$_ -Recurse | Unblock-File
+				if ($OS -eq "Windows"){
+					Get-ChildItem -Path $Directory\$_ -Recurse | Unblock-File
+				}
 				foreach ($Module in $Modules){
 					switch ($LicenseMode) {
 						"E3" { 
@@ -136,6 +138,9 @@ function Get-M365SATLocalChecks($Directory, $EnvironmentType, $Modules, $License
 				}
 			}
 			"AZURE" {
+				if ($OS -eq "Windows"){
+					Get-ChildItem -Path $Directory\$_ -Recurse | Unblock-File
+				}
 				switch ($LicenseLevel) {
 					"L1" {
 						$L1Inspectors = Get-ChildItem $Directory\$AZUREFolder\$L1Folder\*.ps1
@@ -159,7 +164,9 @@ function Get-M365SATLocalChecks($Directory, $EnvironmentType, $Modules, $License
 			}
 			"CUSTOM" {  
 				#Unblock All Files
-				Get-ChildItem -Path $Directory\$_ -Recurse | Unblock-File
+				if ($OS -eq "Windows"){
+					Get-ChildItem -Path $Directory\$_ -Recurse | Unblock-File
+				}
 				foreach ($Module in $Modules){
 					switch ($LicenseMode) {
 						"E3" { 

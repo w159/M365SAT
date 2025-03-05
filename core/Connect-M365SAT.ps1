@@ -121,7 +121,15 @@ function Connect-M365SAT {
                         throw "Failed to authenticate Microsoft Graph, which is required for SharePoint."
                     }
                 }
-                $sharepointAuth = Invoke-MicrosoftSharepointSPOServiceConnection -TenantName $OrgName -Credential $Credential -Environment $Environment
+                $Module = Get-Module PnP.PowerShell -ListAvailable
+				if ([string]::IsNullOrEmpty($Module))
+                {
+                    $sharepointAuth = Invoke-MicrosoftSharepointSPOServiceConnection -TenantName $OrgName -Credential $Credential -Environment $Environment
+                }
+                else
+                {
+                    $sharepointAuth = Invoke-MicrosoftSharepointPnPConnection -TenantName $OrgName -Credential $Credential -Environment $Environment
+                }
                 if (-not $sharepointAuth) {
                     throw "Failed to authenticate Microsoft SharePoint."
                 }
