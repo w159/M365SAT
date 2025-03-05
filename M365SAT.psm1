@@ -157,8 +157,8 @@ function Get-M365SATReport
 	# Check if directory is created where logs are being stored
 	If(!(Test-Path -PathType Container $OutPath))
 	{
-      New-Item -ItemType Directory -Force -Path $OutPath
-	  New-Item -ItemType Directory -Force -Path "$OutPath\log"
+      New-Item -ItemType Directory -Force -Path $OutPath | Out-Null
+	  New-Item -ItemType Directory -Force -Path "$OutPath\log" | Out-Null
 	}
 
 	# Import the PoShLog Module
