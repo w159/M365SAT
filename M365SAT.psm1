@@ -130,6 +130,7 @@ function Get-M365SATReport
 	$tempfiles = @()
 	$MaximumFunctionCount = 32768
 	$RootDirectory = "$PSScriptRoot"
+	$LogDirectory = "$PSScriptRoot\log"
 	$Directory = "$PSScriptRoot\inspectors"
 	$DateNow = (Get-Date -Format hhmm-ddMMyyyy)
 	
@@ -168,7 +169,7 @@ function Get-M365SATReport
 	Banner
 	
 	# Create a New Logger
-	Invoke-M365SATLogger -AllowLogging $AllowLogging -RootDirectory $RootDirectory
+	Invoke-M365SATLogger -AllowLogging $AllowLogging -LogDirectory $LogDirectory
 	
 	Write-Host "$(Get-Date): Checking Existence SkipChecks Parameter..."
 	if (!$SkipChecks.IsPresent)
