@@ -6,11 +6,19 @@ function ExecuteM365SAT
 	<# MAKE CHANGES ONLY BELOW #>
 
 	#CSV Report
-	# Get-M365SATReport -OutPath "C:\Out" -Username "example@example.org" -EnvironmentType CUSTOM -Modules "All" -LicenseMode "E3" -LicenseLevel "All" -reportType "CSV" -AllowLogging "Warning" -LocalMode -SkipChecks -ExpirimentalMode 
+	# Get-M365SATReport -OutPath "C:\Out" -Username "example@example.org" -EnvironmentType M365,AZURE -Modules "All" -LicenseMode "E3" -LicenseLevel "All" -reportType "CSV" -AllowLogging -LocalMode -SkipChecks 
 	#HTML Report
-	# Get-M365SATReport -OutPath "C:\Out" -Username "example@example.org" -EnvironmentType AZURE -Modules "All" -LicenseMode "All" -LicenseLevel "All" -reportType "HTML" -AllowLogging "Warning" -LocalMode -SkipChecks
-	Get-M365SATReport -OutPath "C:\Out" -Username "example@example.org" -EnvironmentType M365 -Modules "All" -LicenseMode "E3" -LicenseLevel "All" -reportType "HTML" -AllowLogging "Warning" -LocalMode -SkipChecks
+	# Get-M365SATReport -OutPath "C:\Out" -Username "example@example.org" -EnvironmentType AZURE -Modules "All" -LicenseMode "All" -LicenseLevel "All" -reportType "HTML" -AllowLogging -LocalMode -SkipChecks
 	
+	<#This is for Windows#>
+	#Get-M365SATReport -OutPath "C:\Out" -Username "example@example.org" -EnvironmentType M365,AZURE -Modules "All" -LicenseMode "E3" -LicenseLevel "All" -reportType "CSV" -AllowLogging -LocalMode -SkipChecks
+	
+	<#This is for Linux#>
+	Get-M365SATReport -OutPath "/home/yourname/m365sat/out" -Username "example@example.org" -EnvironmentType M365,AZURE -Modules "All" -LicenseMode "E3" -LicenseLevel "All" -reportType "CSV" -AllowLogging -LocalMode -SkipChecks
+	
+	<#This is for MacOSX#>
+	Get-M365SATReport -OutPath "/home/yourname/m365sat/out" -Username "example@example.org" -EnvironmentType M365,AZURE -Modules "All" -LicenseMode "E3" -LicenseLevel "All" -reportType "CSV" -AllowLogging -LocalMode -SkipChecks
+
 	<# END OF MAKING CHANGES #>
 	
 	Remove-Module M365SAT -Force
@@ -47,11 +55,11 @@ function Get-OperatingSystem{
 		[Parameter(Mandatory = $true,
 			HelpMessage = 'Operating System: Windows / Linux / MacOSX')]
 		[ValidateSet('Windows', 'Linux', 'MacOSX', IgnoreCase = $true)]
-		[string]$OS = 'Windows'
+		[string]$OS
 	)
 	CheckAdminPrivBeta
 }
-if ($args[1] -eq $null){
+if ($null -eq $args[1]){
 	Get-OperatingSystem
 }
 else
