@@ -17,7 +17,7 @@ function ExecuteM365SAT
 	Get-M365SATReport -OutPath "/home/yourname/m365sat/out" -Username "example@example.org" -EnvironmentType M365,AZURE -Modules "All" -LicenseMode "E3" -LicenseLevel "All" -reportType "CSV" -AllowLogging -LocalMode -SkipChecks
 	
 	<#This is for MacOSX#>
-	Get-M365SATReport -OutPath "/home/yourname/m365sat/out" -Username "example@example.org" -EnvironmentType M365,AZURE -Modules "All" -LicenseMode "E3" -LicenseLevel "All" -reportType "CSV" -AllowLogging -LocalMode -SkipChecks
+	#Get-M365SATReport -OutPath "/home/yourname/m365sat/out" -Username "example@example.org" -EnvironmentType M365,AZURE -Modules "All" -LicenseMode "E3" -LicenseLevel "All" -reportType "CSV" -AllowLogging -LocalMode -SkipChecks
 
 	<# END OF MAKING CHANGES #>
 	
@@ -61,8 +61,8 @@ function Get-PSEnvironmentInfo {
         try {
             $uname = (uname -s 2>$null)
             switch -Wildcard ($uname) {
-                'Linux*'  { $os = "Linux" }
-                'Darwin*'  { $os = "macOS" }
+                'Linux*'  { $OS = "Linux" }
+                'Darwin*'  { $OS = "macOS" }
             }
         }
         catch {
