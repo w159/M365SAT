@@ -11,7 +11,7 @@ Next Release Version: v3.1
 <div>
   <p align="center">
     <b>The Open-Source, Automated Microsoft 365 Security Assessment Tool</b> </br></br>
-    <img src=x width="800"> 
+    <img src="https://github.com/Karmakstylez/M365SAT/blob/alpha/modules/M365SAT-CMD-Logo.png" width="800"> 
   </p>
 </div>
 <br>
