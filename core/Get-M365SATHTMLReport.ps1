@@ -533,7 +533,7 @@ function Get-M365SATHTMLReport
                         <td>    
                             <div class='col d-flex justify-content-center text-center'>
                                 <div class='card card-prio-unknown mb-3' style='width: 10rem;'>
-                                    <div class='summary-header'><h6>Pass</h6></div>
+                                    <div class='summary-header'><h6>Unknown</h6></div>
                                     <div class='card-body'>
                                     <h3>$($UnknownCount)</h3>
                                     </div>
@@ -664,7 +664,7 @@ function Get-M365SATHTMLReport
             <td width='20'><i class='fa-solid fa-check'></i>
             <td><strong>All Solutions</strong></td>
             <td align='right'>
-                <span title='Unknown' class='badge card-prio-ok' style='padding:15px;text-align:center;width:40px;"; $Output += "'>$($UnknownCount)</span>
+                <span title='Unknown' class='badge card-prio-unknown' style='padding:15px;text-align:center;width:40px;"; $Output += "'>$($UnknownCount)</span>
                 <span title='Ok' class='badge card-prio-ok' style='padding:15px;text-align:center;width:40px;"; $Output += "'>$($OKCount)</span>
                 <span title='Informational' class='badge card-prio-info' style='padding:15px;text-align:center;width:40px;"; $Output += "'>$($InformationalCount)</span>
                 <span title='Low' class='badge card-prio-low' style='padding:15px;text-align:center;width:40px;"; $Output += "'>$($LowCount)</span>
@@ -854,7 +854,7 @@ function Get-M365SATHTMLReport
 			#Write Collapse Object that contains the info
 			$Output += "        
                     <div class='accordion' id='$($ProductFamily)_Acd'>
-                    <button class='accordion-button btn-align-left collapsed' type='button' id='$($Result.ID)' data-bs-toggle='collapse' data-bs-target='#$($Result.ID)_body' aria-expanded='false' aria-controls='$($Result.ID)_body'><span class='badge $($BadgeType)'>$($BadgeName)</span><h6>[$($Result.RiskScore)]: $($Result.FindingName)</h6></button></div> 
+                    <button class='accordion-button btn-align-left collapsed' type='button' id='$($Result.ID)' data-bs-toggle='collapse' data-bs-target='#$($Result.ID)_body' aria-expanded='false' aria-controls='$($Result.ID)_body'><span class='badge $($BadgeType)'>$($BadgeName)</span><h6>[$($Result.RiskScore)]: $($Result.Title)</h6></button></div> 
                     "
 			#Start of Container Generation Within group object (FindingName)
 			$Output += "  
@@ -863,7 +863,7 @@ function Get-M365SATHTMLReport
                             <div class='container-fluid'>
                                 <div class='header-bar'>
                                     <div><i class='$($Icon)' color='$($IconColor)'></i></div>
-                                    <div class='col-8'><h6>$($Result.FindingName)</h6></div>
+                                    <div class='col-8'><h6>$($Result.Title)</h6></div>
                                    
                                 </div>"
 			$i++
