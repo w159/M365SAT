@@ -260,15 +260,11 @@ For ProductFamily we have the following options at the moment:
 ID Should be XXX-format e.g. 001, 002, 003, etc.
 
 #### 5.1.1 Example
-The following example is a Azure Inspector:
+The following example is usable to create your own Inspector:
 
 ````
-# Date: 25-1-2023
-# Version: 1.0
-# Benchmark: CIS Microsoft 365 v3.1.0
-# Product Family: Microsoft Azure
-# Purpose: 
-# Author: 
+# Benchmark: CIS Microsoft Azure v3.0.0
+# Author: Leonardo van de Weteringh
 
 # New Error Handler Will be Called here
 Import-Module PoShLog
@@ -276,54 +272,69 @@ Import-Module PoShLog
 #Call the OutPath Variable here
 $path = @($OutPath)
 
-
-function Build-CISMAz5111($findings)
+function Build-CIS0000
 {
-	#Actual Inspector Object that will be returned. All object values are required to be filled in.
-	$inspectorobject = New-Object PSObject -Property @{
-		ID			     = "CISMAz5111"
-		FindingName	     = "CISMAz 5.1.1.1 - The Security Defaults are enabled on Azure Active Directory Tenant"
-		ProductFamily    = "Microsoft Azure"
-		RiskScore	     = "4"
-		Description	     = "Security defaults in Azure Active Directory (Azure AD) make it easier to be secure and help protect your organization. Security defaults contain preconfigured security settings for common attacks."
-		Remediation	     = "Use the PowerShell Script to disable Security Defaults on Microsoft Azure Active Directory"
-		PowerShellScript = '$body = $body = (@{"isEnabled"="false"} | ConvertTo-Json) ;Invoke-MgGraphRequest -Method PATCH https://graph.microsoft.com/beta/policies/identitySecurityDefaultsEnforcementPolicy -Body $body'
-		DefaultValue	 = "True for tenants created later than 2019, False for tenants created before 2019"
-		ExpectedValue    = "False"
-		ReturnedValue    = "$findings"
-		Impact		     = "4"
-		Likelihood	     = "1"
-		RiskRating	     = "Low"
-		Priority		 = "Medium"
-		References	     = @(@{ 'Name' = 'Security defaults in Microsoft Entra ID'; 'URL' = 'https://learn.microsoft.com/en-us/entra/fundamentals/security-defaults' },
-			@{ 'Name' = 'Introducing security defaults'; 'URL' = 'https://techcommunity.microsoft.com/t5/microsoft-entra-azure-ad-blog/introducing-security-defaults/ba-p/1061414' })
-	}
-	return $inspectorobject
+    param(
+        $ReturnedValue,
+        $Status,
+        $RiskScore,
+        $RiskRating
+    )
+
+    # Actual Inspector Object that will be returned. All object values are required to be filled in.
+    $inspectorobject = New-Object PSObject -Property @{
+        UUID             = "CISAz0000"
+        ID               = "0.0.0.0"
+        Title            = "(L1) TITLE"
+        ProductFamily    = "Microsoft Azure / Microsoft Exchange / Microsoft Sharepoint / Microsoft Teams"
+        DefaultValue     = "DEFAULTVALUEHERE"
+        ExpectedValue    = "EXPECTEDVALUEHERE"
+        ReturnedValue    = $ReturnedValue
+        Status           = $Status
+        RiskScore        = $RiskScore
+        RiskRating       = $RiskRating
+        Description      = "DESCRIPTIONHERE"
+        Impact           = "IMPACTWHENREMEDIATINGHERE"
+        Remediation      = 'REMEDIATIONSCRIPTHERE'
+        References       = @(
+            @{ 'Name' = 'SOURCE1'; 'URL' = 'https://example.org' },
+            @{ 'Name' = 'SOURCE2'; 'URL' = 'https://localhost' }
+        )
+    }
+    return $inspectorobject
 }
 
-function Audit-CISMAz5111
+function Audit-CIS0000
 {
 	try
 	{
-		# Actual Script
-		$SecureDefaultsState = Get-MgPolicyIdentitySecurityDefaultEnforcementPolicy
+		# The audit part should go here
+
+		# The validation part should go here
 		
-		# Validation
-		if ($SecureDefaultsState.isEnabled -eq $true)
+		if (#validation of your ifstatement)
 		{
-			$SecureDefaultsState | Format-Table -AutoSize | Out-File "$path\CISMAz5111-SecureDefaultEnforcementPolicy.txt"
-			$finalobject = Build-CISMAz5111($SecureDefaultsState.isEnabled)
-			return $finalobject
+			#If you found a violation
+			$endobject = Build-CIS0000 -ReturnedValue (VALUEHERE) -Status "FAIL" -RiskScore "3" -RiskRating "Informational/Low/Medium/High/Critical"
+			return $endobject
+		}
+		else
+		{
+			#If you did not found a violation
+			$endobject = Build-CIS0000 -ReturnedValue (VALUEHERE) -Status "PASS" -RiskScore "0" -RiskRating "None"
+			Return $endobject
 		}
 		return $null
 	}
 	catch
 	{
+		$endobject = Build-CIS0000 -ReturnedValue "UNKNOWN" -Status "UNKNOWN" -RiskScore "0" -RiskRating "UNKNOWN"
 		Write-WarningLog 'The Inspector: {inspector} was terminated!' -PropertyValues $_.InvocationInfo.ScriptName
 		Write-ErrorLog 'An error occured on line {line} char {char} : {error}' -ErrorRecord $_ -PropertyValues $_.InvocationInfo.ScriptLineNumber, $_.InvocationInfo.OffsetInLine, $_.InvocationInfo.Line
+		return $endobject
 	}
 }
-return Audit-CISMAz5111
+return Audit-CISAz0000
 ````
 
 Explanation of the Code Above:
