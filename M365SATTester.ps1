@@ -5,16 +5,16 @@
     These values will be used when calling the ExecuteM365SAT function.
 #>
 $ScriptConfig = @{
-    OutPath          = "/home/example/m365sat/out" # Change this path based on your OS (e.g., "C:\Out" for Windows)
-    Username         = "example@example.org"        # Replace with your username
-    EnvironmentType  = 'M365','AZURE'           # Specify the environment type (e.g., M365, AZURE, or All)
-    Modules          = "All"                        # Specify the modules to include (e.g., "All" or specific modules (e.g. 'Azure', 'Exchange', 'Office365', 'Sharepoint', 'Teams' ))
-    LicenseMode      = "E3"                         # Specify the license mode (e.g., "E3", "E5" or "All")
-    LicenseLevel     = "All"                        # Specify the license level (e.g. "L1", "L2" or "All")
-    ReportType       = "CSV"                        # Specify the report type (e.g., "CSV", "HTML")
-    AllowLogging     = $true                        # Enable logging if needed (true/false)
-    LocalMode        = $true                        # Enable local mode if needed (true/false)
-    SkipChecks       = $true                        # Skip checks if needed (true/false)
+    OutPath          = "/home/example/m365sat/out"                  # Change this path based on your OS (e.g., "C:\Out" for Windows)
+    Username         = "example@example.org"                        # Replace with your username
+    EnvironmentType  = 'M365','AZURE'                               # Specify the environment type (e.g., M365, AZURE, or All)
+    Modules          = "All"                                        # Specify the modules to include (e.g., "All" or specific modules (e.g. 'Azure', 'Exchange', 'Office365', 'Sharepoint', 'Teams' ))
+    LicenseMode      = "E3"                                         # Specify the license mode (e.g., "E3", "E5" or "All")
+    LicenseLevel     = "All"                                        # Specify the license level (e.g. "L1", "L2" or "All")
+    ReportType       = "HTML"                                       # Specify the report type (e.g., "CSV", "HTML")
+    AllowLogging     = [switch]::Present                            # Enable logging if needed (true/false)
+    LocalMode        = [switch]::Present                            # Enable local mode if needed (true/false)
+    SkipChecks       = [switch]::Present                            # Skip checks if needed (true/false)
 }
 
 function ExecuteM365SAT {
@@ -60,7 +60,6 @@ function Get-PSEnvironmentInfo {
     } elseif ($IsMacOS -or [System.Environment]::OSVersion.Platform -eq 'MacOSX') {
         $OS = "macOS"
     }
-
     return [PSCustomObject]@{
         PowerShellVersion = $psVersion
         OperatingSystem   = $OS
