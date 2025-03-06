@@ -847,7 +847,7 @@ function Get-M365SATHTMLReport
             {
                 $CalloutType = "bd-callout-unknown"
 				$BadgeType = "card-prio-unknown"
-				$BadgeName = "Pass"
+				$BadgeName = "Unknown"
 				$Icon = "fa-solid fa-circle-question"
 				$IconColor = "#C5C5C5"
             }
