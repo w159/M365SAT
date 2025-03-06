@@ -78,6 +78,3 @@ function Check-M365SATModuleDuplicates {
         }
     }
 }
-
-# Entry point of the script
-Check-M365SATModuleDuplicates
