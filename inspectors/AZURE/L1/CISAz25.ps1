@@ -54,7 +54,7 @@ function Audit-CISAz25
 		# Validation
 		if ($MethodsRequired.numberOfAuthenticationMethodsRequired -ne 2)
 		{
-			$finalobject = Build-CISAz25 -ReturnedValue ($MethodsRequired.numberOfAuthenticationMethodsRequired) -Status "FAIL" -RiskScore "3" -RiskRating "Low"
+			$endobject = Build-CISAz25 -ReturnedValue ($MethodsRequired.numberOfAuthenticationMethodsRequired) -Status "FAIL" -RiskScore "3" -RiskRating "Low"
 			return $endobject
 		}
 		else

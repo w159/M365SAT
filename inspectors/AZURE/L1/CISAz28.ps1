@@ -66,7 +66,7 @@ function Audit-CISAz28
 		}
 		if ($AffectedOptions.count -igt 0)
 		{
-			$finalobject = Build-CISAz28 -ReturnedValue ($AffectedOptions) -Status "FAIL" -RiskScore "5" -RiskRating "Medium"
+			$endobject = Build-CISAz28 -ReturnedValue ($AffectedOptions) -Status "FAIL" -RiskScore "5" -RiskRating "Medium"
 			return $endobject
 		}
 		else
