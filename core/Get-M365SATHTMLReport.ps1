@@ -46,11 +46,17 @@ function Get-M365SATHTMLReport
     try{
         # Microsoft Graph Variant
         $CompanyName = (Get-MgOrganization).DisplayName
-        $TenantName = (((Get-MgOrganization).VerifiedDomains |  Where-Object { ($_.Name -like "*.onmicrosoft.com") -and ($_.Name -notlike "*mail.onmicrosoft.com") }).Name -split '.onmicrosoft.com')[0]
+        $TenantName = ((Get-MgOrganization).VerifiedDomains |  Where-Object { $_.IsDefault -eq $true})
+        if ($TenantName.Contains('onmicrosoft.com')){
+            $TenantName = ($TenantName -split '.onmicrosoft.com')[0]
+        }
     }catch{
         # Microsoft Exchange Variant
         $CompanyName = (Get-AcceptedDomain | Where-Object { $_.Default -eq 'True' }).DomainName
-        $TenantName = ((Get-AcceptedDomain | Where-Object {  { $_.Default -eq 'True' } -and ($_.DomainName -like "*.onmicrosoft.com") -and ($_.DomainName -notlike "*mail.onmicrosoft.com") }).DomainName -split '.onmicrosoft.com')[0]
+        $TenantName = (Get-AcceptedDomain | Where-Object {  { $_.Default -eq 'True' }}).DomainName
+        if ($TenantName.Contains('onmicrosoft.com')){
+            $TenantName = ($TenantName -split '.onmicrosoft.com')[0]
+        }
     }
 	
 
