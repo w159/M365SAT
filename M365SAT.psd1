@@ -12,22 +12,22 @@
 RootModule = 'M365SAT.psm1'
 
 # Version number of this module.
-ModuleVersion = '3.0'
+ModuleVersion = '3.1'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
 
 # ID used to uniquely identify this module
-GUID = 'd19fde63-5e13-4f5c-bd2d-ba407e0cf260'
+GUID = '59cae8b6-0abb-4401-ac23-1ce5f568a579'
 
 # Author of this module
 Author = 'Leonardo van de Weteringh'
 
 # Company or vendor of this module
-CompanyName = 'Karmakstylez'
+CompanyName = 'BSEC'
 
 # Copyright statement for this module
-Copyright = '(c) 2024 Leonardo van de Weteringh. All rights reserved.'
+Copyright = '(c) 2025 Leonardo van de Weteringh. All rights reserved.'
 
 #Description of the functionality provided by this module
 Description = 'A Microsoft Azure/Microsoft 365 Security Audit Tool'
@@ -98,16 +98,16 @@ PrivateData = @{
         # Tags = @()
 
         # A URL to the license for this module.
-        LicenseUri = 'https://github.com/asterictnl-lvdw/M365SAT/blob/production/LICENSE'
+        LicenseUri = 'https://github.com/Karmakstylez/M365SAT/blob/production/LICENSE'
 
         # A URL to the main website for this project.
-        ProjectUri = 'https://github.com/asterictnl-lvdw/M365SAT'
+        ProjectUri = 'https://github.com/Karmakstylez/M365SAT'
 
         # A URL to an icon representing this module.
         #IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'https://github.com/asterictnl-lvdw/M365SAT/blob/production/CHANGELOG.md'
+        ReleaseNotes = 'https://github.com/Karmakstylez/M365SAT/blob/production/CHANGELOG.md'
 
         # Prerelease string of this module
         # Prerelease = ''
@@ -123,7 +123,7 @@ PrivateData = @{
 } # End of PrivateData hashtable
 
 # HelpInfo URI of this module
-HelpInfoURI = 'https://github.com/asterictnl-lvdw/M365SAT/blob/production/HELPME.md'
+HelpInfoURI = 'https://github.com/Karmakstylez/M365SAT/blob/production/HELPME.md'
 
 # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
 # DefaultCommandPrefix = ''

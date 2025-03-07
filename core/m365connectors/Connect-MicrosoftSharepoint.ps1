@@ -1,322 +1,134 @@
-function Invoke-MicrosoftSharepointPnPCredentials{
-	param(
-		[string]$TenantName,
-		[System.Object]$Credential,
-		[string]$Environment
-	)
+function Invoke-MicrosoftSharepointPnPConnection {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$TenantName,
 
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{ 
-				$SpEnvironment = 'USGovernmentHigh' 
-			}
-			"USGovDoD" 
-			{ 
-				$SpEnvironment = 'USGovernmentDoD' 
-			}
-			"GermanyCloud" 
-			{ 
-				$SpEnvironment = 'Germany' 
-			}
-			"China" 
-			{ 
-				$SpEnvironment = 'China' 
-			}
-			default 
-			{ 
-				$SpEnvironment = 'Production'
-			}
-		}
-		$ClientId = Register-PnPEntraIDAppForInteractiveLogin -ApplicationName "PnP Rocks" -Tenant $TenantName.onmicrosoft.com -Credential $Credential
-		$ClientId = $ClientId.'AzureAppId/ClientId'
-		if ([string]::IsNullOrEmpty($ClientId)){
-			$ClientId =  (Get-MgApplication | Where-Object {$_.DisplayName -eq 'PnP Rocks'}).AppId
-		}
-		$Connection = Connect-PnPOnline -AzureEnvironment $Environment -Url "https://$TenantName.sharepoint.com" -Credential $Credential -ClientId $ClientId
-		if ((Get-PnPTenant) -ne $null)
-		{
-			Write-Host "Connected to Microsoft PnP Powershell!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $true
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft PnP Powershell' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft PnP Powershell' -ErrorRecord $_
-		return $false
-	}
+        [Parameter(Mandatory = $false)]
+        [SecureString]$Credential,
+
+        [Parameter(Mandatory = $false)]
+        [string]$Environment = "Production"
+    )
+
+    # Map environment names to SharePoint environment values
+    $environmentMap = @{
+        "USGovGCCHigh" = "USGovernmentHigh"
+        "USGovDoD"     = "USGovernmentDoD"
+        "GermanyCloud" = "Germany"
+        "China"        = "China"
+        default        = "Production"
+    }
+
+    # Determine the SharePoint environment
+    $SpEnvironment = $environmentMap[$Environment]
+    if (-not $SpEnvironment) {
+        $SpEnvironment = $environmentMap["default"]
+    }
+
+    # Retry logic with a maximum of 3 attempts
+    $maxAttempts = 3
+    $attempt = 1
+    while ($attempt -le $maxAttempts) {
+        try {
+            Write-Host "Connecting to Microsoft PnP PowerShell... (Attempt $attempt of $maxAttempts)"
+
+            # Register or retrieve the ClientId for the app
+            if ($null -ne ((Get-MgApplication | Where-Object { $_.DisplayName -eq 'PnP Rocks' }).AppId)){
+                $ClientId = (Get-MgApplication | Where-Object { $_.DisplayName -eq 'PnP Rocks' }).AppId
+            }
+            else{
+                Write-Host "Creating EntraIDAppRegistration for PnP.PowerShell..."
+                $ClientId = Register-PnPEntraIDAppForInteractiveLogin -ApplicationName "PnP Rocks" -Tenant "$TenantName.onmicrosoft.com" -Interactive -AzureEnvironment $SpEnvironment -ErrorAction SilentlyContinue
+                $ClientId = $ClientId.'AzureAppId/ClientId'
+            }
+
+            # Determine the method of connection based on provided parameters
+            if ($Credential) {
+                Connect-PnPOnline -AzureEnvironment $SpEnvironment -Url "https://$TenantName.sharepoint.com" -Credential $Credential -ClientId $ClientId -ErrorAction Stop | Out-Null
+            }
+            else {
+                Connect-PnPOnline -AzureEnvironment $SpEnvironment -Url "https://$TenantName.sharepoint.com" -Interactive -ClientId $ClientId -ErrorAction Stop | Out-Null
+            }
+
+            # Verify the connection
+            if ($null -ne (Get-PnPTenant)) {
+                Write-Host "Connected to Microsoft PnP PowerShell!" -ForegroundColor DarkYellow -BackgroundColor Black
+                return $true
+            }
+            else {
+                throw "Failed to establish a valid context with Microsoft PnP PowerShell."
+            }
+        }
+        catch {
+            Write-Warning "Attempt $attempt failed: $_"
+            if ($attempt -ge $maxAttempts) {
+                Write-Error "Maximum number of retry attempts reached. Unable to connect to Microsoft PnP PowerShell."
+                throw $_
+            }
+            Start-Sleep -Seconds 5  # Wait before retrying
+			$attempt++
+        }
+    }
 }
 
-function Invoke-MicrosoftSharepointPnPUsername{
-	param(
-		[string]$TenantName,
-		[string]$Environment
-	)
+function Invoke-MicrosoftSharepointSPOServiceConnection {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$TenantName,
+        [Parameter(Mandatory = $false)]
+        [SecureString]$Credential,
+        [Parameter(Mandatory = $false)]
+        [string]$Environment = "default"
+    )
 
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{ 
-				$SpEnvironment = 'USGovernmentHigh' 
-			}
-			"USGovDoD" 
-			{ 
-				$SpEnvironment = 'USGovernmentDoD' 
-			}
-			"GermanyCloud" 
-			{ 
-				$SpEnvironment = 'Germany' 
-			}
-			"China" 
-			{ 
-				$SpEnvironment = 'China' 
-			}
-			default 
-			{ 
-				$SpEnvironment = 'Production'
-			}
-		}
-		$ClientId = Register-PnPEntraIDAppForInteractiveLogin -ApplicationName "PnP Rocks" -Tenant $TenantName.onmicrosoft.com -Interactive
-		$ClientId = $ClientId.'AzureAppId/ClientId'
-		if ([string]::IsNullOrEmpty($ClientId)){
-			$ClientId =  (Get-MgApplication | Where-Object {$_.DisplayName -eq 'PnP Rocks'}).AppId
-		}
-		$Connection = Connect-PnPOnline -AzureEnvironment $Environment -Url "https://$TenantName.sharepoint.com" -Interactive -ClientId $ClientID
-		if ((Get-PnPTenant) -ne $null)
-		{
-			Write-Host "Connected to Microsoft PnP Powershell!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $true
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft PnP Powershell' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft PnP Powershell' -ErrorRecord $_
-		return $false
-	}
-}
+    # Map environment names to SharePoint environment values
+    $environmentMap = @{
+        "USGovGCCHigh" = "ITAR"
+        "USGovDoD"     = "ITAR"
+        "GermanyCloud" = "Germany"
+        "China"        = "China"
+        default        = "default"
+    }
 
-function Invoke-MicrosoftSharepointPnPLite{
-	param(
-		[string]$TenantName,
-		[string]$Environment
-	)
+    # Determine the SharePoint environment
+    $SpEnvironment = $environmentMap[$Environment]
+    if (-not $SpEnvironment) {
+        $SpEnvironment = $environmentMap["default"]
+    }
 
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{ 
-				$SpEnvironment = 'USGovernmentHigh' 
-			}
-			"USGovDoD" 
-			{ 
-				$SpEnvironment = 'USGovernmentDoD' 
-			}
-			"GermanyCloud" 
-			{ 
-				$SpEnvironment = 'Germany' 
-			}
-			"China" 
-			{ 
-				$SpEnvironment = 'China' 
-			}
-			default 
-			{ 
-				$SpEnvironment = 'Production'
-			}
-		}
-		$ClientId = Register-PnPEntraIDAppForInteractiveLogin -ApplicationName "PnP Rocks" -Tenant $TenantName.onmicrosoft.com -Interactive
-		$ClientId = $ClientId.'AzureAppId/ClientId'
-		if ([string]::IsNullOrEmpty($ClientId)){
-			$ClientId =  (Get-MgApplication | Where-Object {$_.DisplayName -eq 'PnP Rocks'}).AppId
-		}
-		$Connection = Connect-PnPOnline -AzureEnvironment $Environment -Url "https://$TenantName.sharepoint.com" -Interactive -ClientId $ClientID
-		if ((Get-PnPTenant) -ne $null)
-		{
-			Write-Host "Connected to Microsoft PnP Powershell!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $true
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft PnP Powershell' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft PnP Powershell' -ErrorRecord $_
-		return $false
-	}
-}
+    # Retry logic with a maximum of 3 attempts
+    $maxAttempts = 3
+    $attempt = 1
+    while ($attempt -le $maxAttempts) {
 
-function Invoke-MicrosoftSharepointCredentials
-{
-	param(
-		[string]$TenantName,
-		[System.Object]$Credential,
-		[string]$Environment
-	)
+        try {
+            Write-Host "Connecting to Microsoft SharePoint SPOService... (Attempt $attempt of $maxAttempts)"
 
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{ 
-				$SpEnvironment = 'ITAR' 
-			}
-			"USGovDoD" 
-			{ 
-				$SpEnvironment = 'ITAR' 
-			}
-			"GermanyCloud" 
-			{ 
-				$SpEnvironment = 'Germany' 
-			}
-			"China" 
-			{ 
-				$SpEnvironment = 'China' 
-			}
-			default 
-			{ 
-				$SpEnvironment = 'default'
-			}
-		}
+            # Determine the method of connection based on provided parameters
+            if ($Credential) {
+                Connect-SPOService -Url "https://$TenantName-admin.sharepoint.com" -Region $SpEnvironment -Credential $Credential -ErrorAction Stop | Out-Null
+            }
+            else {
+                Connect-SPOService -Url "https://$TenantName-admin.sharepoint.com" -Region $SpEnvironment -ErrorAction Stop | Out-Null
+            }
 
-		Write-Host "Connecting to Microsoft Sharepoint Powershell..."
-		Connect-SPOService -Url "https://$TenantName-admin.sharepoint.com" -Region $SpEnvironment -Credential $Credential -ErrorAction Stop
-		if ((Get-SPOTenant) -ne $null)
-		{
-			Write-Host "Connected to Microsoft Sharepoint Powershell!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $true
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft Sharepoint Powershell' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft Sharepoint Powershell' -ErrorRecord $_
-		return $false
-	}
-	
-}
-
-function Invoke-MicrosoftSharepointUsername
-{
-	param(
-		[string]$TenantName,
-		[string]$Environment
-	)
-
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{ 
-				$SpEnvironment = 'ITAR' 
-			}
-			"USGovDoD" 
-			{ 
-				$SpEnvironment = 'ITAR' 
-			}
-			"GermanyCloud" 
-			{ 
-				$SpEnvironment = 'Germany' 
-			}
-			"China" 
-			{ 
-				$SpEnvironment = 'China' 
-			}
-			default 
-			{ 
-				$SpEnvironment = 'default'
-			}
-		}
-
-		Write-Host "Connecting to Microsoft Sharepoint Powershell..."
-		Connect-SPOService -Url "https://$TenantName-admin.sharepoint.com" -Region $SpEnvironment -ErrorAction Stop
-		if ((Get-SPOTenant) -ne $null)
-		{
-			Write-Host "Connected to Microsoft Sharepoint Powershell!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $true
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft Sharepoint Powershell' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft Sharepoint Powershell' -ErrorRecord $_
-		return $false
-	}
-	
-}
-
-function Invoke-MicrosoftSharepointLite
-{
-	param(
-		[string]$TenantName,
-		[string]$Environment
-	)
-
-	try
-	{
-		switch ($Environment) {
-			"USGovGCCHigh" 
-			{ 
-				$SpEnvironment = 'ITAR' 
-			}
-			"USGovDoD" 
-			{ 
-				$SpEnvironment = 'ITAR' 
-			}
-			"GermanyCloud" 
-			{ 
-				$SpEnvironment = 'Germany' 
-			}
-			"China" 
-			{ 
-				$SpEnvironment = 'China' 
-			}
-			default 
-			{ 
-				$SpEnvironment = 'default'
-			}
-		}
-
-		Write-Host "Connecting to Microsoft Sharepoint Powershell..."
-		Connect-SPOService -Url "https://$TenantName-admin.sharepoint.com" -Region $SpEnvironment -ErrorAction Stop
-		if ((Get-SPOTenant) -ne $null)
-		{
-			Write-Host "Connected to Microsoft Sharepoint Powershell!" -ForegroundColor DarkYellow -BackgroundColor Black
-			return $true
-		}
-		else
-		{
-			Write-ErrorLog 'Failed to Connect to Microsoft Sharepoint Powershell' -ErrorRecord $_
-			return $false
-		}
-	}
-	catch
-	{
-		Write-ErrorLog 'Failed to Connect to Microsoft Sharepoint Powershell' -ErrorRecord $_
-		return $false
-	}
-	
+            # Verify the connection
+            if ($null -ne (Get-SPOTenant)) {
+                Write-Host "Connected to Microsoft SharePoint SPOService!" -ForegroundColor DarkYellow -BackgroundColor Black
+                return $true
+            }
+            else {
+                throw "Failed to establish a valid context with Microsoft SharePoint SPOService."
+            }
+        }
+        catch {
+            Write-Warning "Attempt $attempt failed: $_"
+            if ($attempt -ge $maxAttempts) {
+                Write-Error "Maximum number of retry attempts reached. Unable to connect to Microsoft SharePoint SPOService."
+                throw $_
+            }
+            Start-Sleep -Seconds 5  # Wait before retrying
+			$attempt++
+        }
+    }
 }
