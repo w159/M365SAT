@@ -43,7 +43,7 @@ function Invoke-MicrosoftExchangeConnection {
 
             # Verify the connection
             if ($null -ne (Get-ConnectionInformation)) {
-                $OrgName = ((Get-AcceptedDomain | Where-Object { $_.Default -eq $true -and $_.DomainName -like "*.onmicrosoft.com" -and $_.DomainName -notlike "*mail.onmicrosoft.com" }).DomainName -split '.onmicrosoft.com')[0]
+                $OrgName = ((Get-AcceptedDomain | Where-Object { $_.DomainName -like "*.onmicrosoft.com" -and $_.DomainName -notlike "*mail.onmicrosoft.com" }).DomainName -split '.onmicrosoft.com')[0]
                 Write-Host "Connected to Microsoft Exchange!" -ForegroundColor DarkYellow -BackgroundColor Black
                 return $OrgName
             }
