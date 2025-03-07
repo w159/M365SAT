@@ -18,7 +18,7 @@ We use github to host code, track issues, feature requests, and accept pull requ
 ## Any contributions you make will be under the MIT Software License
 Any submitted code changes or additions are subject to the [MIT License](http://choosealicense.com/licenses/mit/) that covers the project. Feel free to contact the maintainers if that's a concern.
 
-## Report bugs using Github's [issues](https://github.com/asterictnl-lvdw/M365SAT/issues)
+## Report bugs using Github's [issues](https://github.com/Karmakstylez/M365SAT/issues)
 Report a bug by [opening a new issue](); and selecting the 'Bug report' template.
 Open a feature request by [opening a new issue](); and selecting the 'Feature request' template.
 
@@ -50,7 +50,7 @@ It is important that any submitted feature requests are clear and easy to unders
     - What should the result look like?
 
 ## Use a Consistent Coding Style
-365*Inspect* is written using VS Code. This keeps spacing conventions and alias use (or lack thereof) consistent across all of the included scripts.
+M365SAT is written using VS Code. This keeps spacing conventions and alias use (or lack thereof) consistent across all of the included scripts.
 Developing new inspectors and features within VS Code is encouraged, but not required.
 In the war of "Tabs vs Spaces", we fall squarely into the "spaces" camp and request that spacing and tabbing be set to four spaces for consistency.
 Spaces are consistently a single column regardless of environment, where tab columns can vary.

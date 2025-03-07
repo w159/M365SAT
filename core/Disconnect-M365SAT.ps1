@@ -54,6 +54,7 @@ function Disconnect-M365SAT($Modules)
 
 				try
 				{
+					Set-AzConfig -EnableLoginByWam $true -LoginExperienceV2 'On'
 					Disconnect-AzAccount | Out-Null
 					$DisconnectAzure = $True
 				}

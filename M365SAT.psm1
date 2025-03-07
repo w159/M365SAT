@@ -6,7 +6,7 @@
 		M365SAT - The Microsoft 365 Security Assessment Tool
     
     .VERSION
-        Version 3.0 Alpha
+        Version 3.1 alpha
 
     .RELEASE_DATE
         08-23-2024
@@ -23,16 +23,16 @@
         Output report uses open source components for HTML formatting
         - Bootstrap 5 - MIT License - https://getbootstrap.com/docs/4.0/about/license/
         - Fontawesome 6 - CC BY 4.0 License - https://fontawesome.com/license/free
-        - Leonardo van de Weteringh © 2024
+        - Leonardo van de Weteringh © 2025
         
         ############################################################################
 
-        URL: https://github.com/asterictnl-lvdw/M365SAT
+        URL: https://github.com/Karmakstylez/M365SAT
 
         ############################################################################    
 
 	.LINK
-        https://github.com/asterictnl-lvdw/M365SAT
+        https://github.com/Karmakstylez/M365SAT
 
 #>
 
@@ -97,10 +97,6 @@ function Get-M365SATReport
 		[ValidateSet('M365', 'AZURE', 'CUSTOM', 'ALL', IgnoreCase = $true)]
 		[string[]]$EnvironmentType = "ALL",
 		[Parameter(Mandatory = $true,
-			HelpMessage = 'Choose Benchmark Version: 3 / LATEST')]
-		[ValidateSet(3, 'LATEST', IgnoreCase = $true)]
-		[string]$BenchmarkVersion = "LATEST",
-		[Parameter(Mandatory = $true,
 			HelpMessage = 'Available Modules: Azure / Exchange / Office365 / Sharepoint / Teams / All')]
 		[ValidateSet('Azure', 'Exchange', 'Office365', 'Sharepoint', 'Teams', 'All', IgnoreCase = $true)]
 		[String[]]$Modules = "All",
@@ -117,9 +113,8 @@ function Get-M365SATReport
 		[ValidateSet('HTML', 'CSV', 'XML', 'CSMS', IgnoreCase = $true)]
 		[string]$reportType = "HTML",
 		[Parameter(Mandatory = $false,
-			HelpMessage = 'Log Message Level: Verbose / Debug / Info / Warning / Error / Fatal')]
-		[ValidateSet('Verbose', 'Debug', 'Info', 'Warning', 'Error', 'Fatal', IgnoreCase = $true)]
-		[string]$AllowLogging = "Warning",
+			HelpMessage = 'Enables Logging with PoSHLogger')]
+		[switch]$AllowLogging,
 		[Parameter(Mandatory = $false,
 			HelpMessage = 'Skips Module Updates (Experimental)')]
 		[switch]$SkipChecks,
@@ -162,7 +157,8 @@ function Get-M365SATReport
 	# Check if directory is created where logs are being stored
 	If(!(Test-Path -PathType Container $OutPath))
 	{
-      New-Item -ItemType Directory -Force -Path $OutPath
+      New-Item -ItemType Directory -Force -Path $OutPath | Out-Null
+	  New-Item -ItemType Directory -Force -Path "$OutPath\log" | Out-Null
 	}
 
 	# Import the PoShLog Module
@@ -172,7 +168,9 @@ function Get-M365SATReport
 	Banner
 	
 	# Create a New Logger
-	Invoke-M365SATLogger -AllowLogging $AllowLogging -RootDirectory $RootDirectory
+	if ($AllowLogging.IsPresent){
+		Invoke-M365SATLogger -RootDirectory $RootDirectory
+	}
 	
 	Write-Host "$(Get-Date): Checking Existence SkipChecks Parameter..."
 	if (!$SkipChecks.IsPresent)
@@ -200,7 +198,7 @@ function Get-M365SATReport
 	if ($LocalMode.IsPresent)
 	{
 		Write-Host "$(Get-Date): Getting Inspectors..."
-		$inspectorlist = Get-M365SATLocalChecks -Directory $Directory -EnvironmentType $EnvironmentType -BenchmarkVersion $BenchmarkVersion -Modules $Modules -LicenseMode $LicenseMode -LicenseLevel $LicenseLevel #Gets list of all inspectors
+		$inspectorlist = Get-M365SATLocalChecks -Directory $Directory -EnvironmentType $EnvironmentType -Modules $Modules -LicenseMode $LicenseMode -LicenseLevel $LicenseLevel #Gets list of all inspectors
 		if ($ExpirimentalMode.IsPresent)
 		{
 			Write-Host "$(Get-Date): Executing Inspectors in Expirimental Mode..."
@@ -208,14 +206,15 @@ function Get-M365SATReport
 		}
 		else
 		{
+			#ExpirimentalMode is now the same as normal mode as the format has been changed.
 			Write-Host "$(Get-Date): Executing Inspectors in SingleThread Mode..."
-			$object = Invoke-M365SATCustomChecks -inspectors $inspectorlist -Directory $Directory
+			$object = Invoke-M365SATChecksNew -inspectors $inspectorlist -Directory $Directory
 		}
 	}
 	else
 	{
 		Write-Host "$(Get-Date): Getting Inspectors..."
-		$inspectorlist = Get-M365SATChecks -Directory $Directory -EnvironmentType $EnvironmentType -BenchmarkVersion $BenchmarkVersion -Modules $Modules -LicenseMode $LicenseMode -LicenseLevel $LicenseLevel #Gets list of all inspectors
+		$inspectorlist = Get-M365SATChecks -Directory $Directory -EnvironmentType $EnvironmentType -Modules $Modules -LicenseMode $LicenseMode -LicenseLevel $LicenseLevel #Gets list of all inspectors
 		if ($ExpirimentalMode.IsPresent)
 		{
 			Write-Host "$(Get-Date): Creating Directories..."

@@ -46,42 +46,47 @@ function Get-M365SATHTMLReport
     try{
         # Microsoft Graph Variant
         $CompanyName = (Get-MgOrganization).DisplayName
-        $TenantName = (((Get-MgOrganization).VerifiedDomains |  Where-Object { ($_.Name -like "*.onmicrosoft.com") -and ($_.Name -notlike "*mail.onmicrosoft.com") }).Name -split '.onmicrosoft.com')[0]
+        $TenantName = ((Get-MgOrganization).VerifiedDomains |  Where-Object { $_.IsDefault -eq $true})
+        if ($TenantName.Contains('onmicrosoft.com')){
+            $TenantName = ($TenantName -split '.onmicrosoft.com')[0]
+        }
     }catch{
         # Microsoft Exchange Variant
         $CompanyName = (Get-AcceptedDomain | Where-Object { $_.Default -eq 'True' }).DomainName
-        $TenantName = ((Get-AcceptedDomain |  Where-Object {  { $_.Default -eq 'True' } -and ($_.DomainName -like "*.onmicrosoft.com") -and ($_.DomainName -notlike "*mail.onmicrosoft.com") }).DomainName -split '.onmicrosoft.com')[0]
+        $TenantName = (Get-AcceptedDomain | Where-Object {  { $_.Default -eq 'True' }}).DomainName
+        if ($TenantName.Contains('onmicrosoft.com')){
+            $TenantName = ($TenantName -split '.onmicrosoft.com')[0]
+        }
     }
 	
 
 	
 	#AffectedObjects Definition
-	$AffectedObjects = $(foreach ($Affected in $object.Findings) { $Affected | ? { $_.Priority -and $_.RiskRating -ne $null } }).Count
-	$ExchangeObject += $(foreach ($Affected in $object.Findings) { $Affected | ? { $_.ProductFamily -eq "Microsoft Exchange" -and $_.RiskRating -ne $null } })
-	$AzureObject += $(foreach ($Affected in $object.Findings) { $Affected | ? { $_.ProductFamily -eq "Microsoft Azure" -and $_.RiskRating -ne $null } })
-	$TeamsObject += $(foreach ($Affected in $object.Findings) { $Affected | ? { $_.ProductFamily -eq "Microsoft Teams" -and $_.RiskRating -ne $null } })
-	$SharePointObject += $(foreach ($Affected in $object.Findings) { $Affected | ? { $_.ProductFamily -eq "Microsoft Sharepoint" -and $_.RiskRating -ne $null } })
-	$MO365Object += $(foreach ($Affected in $object.Findings) { $Affected | ? { $_.ProductFamily -eq "Microsoft Office 365" -and $_.RiskRating -ne $null } })
+	$AffectedObjects = $(foreach ($Affected in $object.Findings) { $Affected | Where-Object { $_.Status -eq "FAIL" } }).Count
+	$ExchangeObject += $(foreach ($Affected in $object.Findings) { $Affected | Where-Object { $_.ProductFamily -eq "Microsoft Exchange" -and $_.Status -eq "FAIL" } })
+	$AzureObject += $(foreach ($Affected in $object.Findings) { $Affected | Where-Object { $_.ProductFamily -eq "Microsoft Azure" -and $_.Status -eq "FAIL" } })
+	$TeamsObject += $(foreach ($Affected in $object.Findings) { $Affected | Where-Object { $_.ProductFamily -eq "Microsoft Teams" -and $_.Status -eq "FAIL" } })
+	$SharePointObject += $(foreach ($Affected in $object.Findings) { $Affected | Where-Object { $_.ProductFamily -eq "Microsoft Sharepoint" -and $_.Status -eq "FAIL" } })
+	$MO365Object += $(foreach ($Affected in $object.Findings) { $Affected | Where-Object { $_.ProductFamily -eq "Microsoft Office 365" -and $_.Status -eq "FAIL" } })
 	
 	# Obtain the tenant domain and date for the report
 	
 	$StartDate = $object.StartDate
 	$ReportDate = $object.EndDate
-	$Version = "3.0 beta"
+	$Version = "3.1 alpha"
 	
-	# Summary (Critical,High,Medium,Low,Informational)
+	# Summary (Critical,High,Medium,Low,Informational,OK)
 	
-	$CriticalCount = $(foreach ($priority in $object.Findings) { $priority | ? { $_.RiskRating -eq "Critical" } }).RiskRating.Count
-	$HighCount = $(foreach ($priority in $object.Findings) { $priority | ? { $_.RiskRating -eq "High" } }).RiskRating.Count
-	$MediumCount = $(foreach ($priority in $object.Findings) { $priority | ? { $_.RiskRating -eq "Medium" } }).RiskRating.Count
-	$LowCount = $(foreach ($priority in $object.Findings) { $priority | ? { $_.RiskRating -eq "Low" } }).RiskRating.Count
-	$InformationalCount = $(foreach ($priority in $object.Findings) { $priority | ? { $_.RiskRating -eq "Informational" } }).RiskRating.Count
+	$CriticalCount = $(foreach ($priority in $object.Findings) { $priority | ? { $_.RiskRating -eq "Critical" -and $_.Status -eq "FAIL" } }).RiskRating.Count
+	$HighCount = $(foreach ($priority in $object.Findings) { $priority | ? { $_.RiskRating -eq "High" -and $_.Status -eq "FAIL" } }).RiskRating.Count
+	$MediumCount = $(foreach ($priority in $object.Findings) { $priority | ? { $_.RiskRating -eq "Medium" -and $_.Status -eq "FAIL" } }).RiskRating.Count
+	$LowCount = $(foreach ($priority in $object.Findings) { $priority | ? { $_.RiskRating -eq "Low" -and $_.Status -eq "FAIL" } }).RiskRating.Count
+	$InformationalCount = $(foreach ($priority in $object.Findings) { $priority | ? { $_.RiskRating -eq "Informational" -and $_.Status -eq "FAIL"   } }).RiskRating.Count
+	$OKCount = $(foreach ($priority in $object.Findings) { $priority | ? { $_.RiskRating -eq "None" -and $_.Status -eq "PASS"  } }).RiskRating.Count
+    $UnknownCount = $(foreach ($priority in $object.Findings) { $priority | ? { $_.RiskRating -eq "UNKNOWN" -and $_.Status -eq "UNKNOWN"  } }).RiskRating.Count
 	
 	# Misc
 	$ReportTitle = "M365SAT - Microsoft 365 Security Report"
-	$ReportSub1 = "M365SAT - Microsoft 365 Security Assessment Tool"
-	$ReportSub2 = "Security Audit Report"
-	$ReportSub3 = "This report details any tenant configuration changes recommended within your tenant."
 	
 	# End of Attributes
 	
@@ -202,6 +207,18 @@ function Get-M365SATHTMLReport
             color: white; 
         }
 
+        .card-prio-unknown{
+            background-color: #7a7a7a;
+            color: white;
+            border-color: #7a7a7a;
+        }
+
+        .card-prio-ok{
+            background-color: #4dfa5b;
+            color: white;
+            border-color: #4dfa5b;
+        }
+
         .card-prio-info{
             background-color: #2986CC;
             color: white;
@@ -278,6 +295,22 @@ function Get-M365SATHTMLReport
         
         .bd-callout+.bd-callout {
             margin-top: -.25rem;
+        }
+
+        .bd-callout-unknown {
+            border-left-color: #7a7a7a;
+        }
+
+        .bd-callout-unknown h4 {
+            color: #7a7a7a;
+        }
+
+        .bd-callout-ok {
+            border-left-color: #4dfa5b;
+        }
+
+        .bd-callout-ok h4 {
+            color: #4dfa5b;
         }
         
         .bd-callout-info {
@@ -463,7 +496,7 @@ function Get-M365SATHTMLReport
 							"
 	
 	$Output += "<strong>Version $version </strong>
-                            <p> M365SAT assesses your compliance posture, highlights risks and recommends remediation steps to ensure compliance with essential data protection and regulatory standards.</p>"
+                            <p> M365SAT enables proactive governance through automated compliance benchmarking, risk surface analysis, and AI-driven corrective roadmaps to ensure persistent adherence to global data protection standards (GDPR, CCPA, ISO 27001, CIS, CICA) and regulatory obligations.</p>"
 	
 	$Output += "<table><tr><td>
                             <strong>Start Date</strong>  </td>
@@ -500,12 +533,38 @@ function Get-M365SATHTMLReport
         OUTPUT GENERATION / Summary cards
 
     #>
-	
-	$Output += "
+
+    $Output += "
                     <table class='table-summary-results'>
                         <td>    
                             <div class='col d-flex justify-content-center text-center'>
-                                <div class='card card-prio-info mb-3' style='width: 10em;'>
+                                <div class='card card-prio-unknown mb-3' style='width: 10rem;'>
+                                    <div class='summary-header'><h6>Unknown</h6></div>
+                                    <div class='card-body'>
+                                    <h3>$($UnknownCount)</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    "
+	
+	$Output += "
+                        <td>    
+                            <div class='col d-flex justify-content-center text-center'>
+                                <div class='card card-prio-ok mb-3' style='width: 10rem;'>
+                                    <div class='summary-header'><h6>Pass</h6></div>
+                                    <div class='card-body'>
+                                    <h3>$($OKCount)</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    "
+
+    $Output += "
+                        <td>    
+                            <div class='col d-flex justify-content-center text-center'>
+                                <div class='card card-prio-info mb-3' style='width: 10rem;'>
                                     <div class='summary-header'><h6>Informational</h6></div>
                                     <div class='card-body'>
                                     <h3>$($InformationalCount)</h3>
@@ -580,7 +639,7 @@ function Get-M365SATHTMLReport
                 <div class='col-sm-8'>
                     <h6>Configuration Health Index</h6>                  
                     <p>The configuration health index is a weighted value representing your configuration. Not all configuration is 
-                    considered the same. Some configuration is weighted higher than others. <a href='https://github.com/aster-lvdw/M365SAT' target='_blank'>See More... </a></p>
+                    considered the same. Some configuration is weighted higher than others. <a href='https://github.com/Karmakstylez/M365SAT' target='_blank'>See More... </a></p>
 
                 </div>
             </div>                    
@@ -611,6 +670,8 @@ function Get-M365SATHTMLReport
             <td width='20'><i class='fa-solid fa-check'></i>
             <td><strong>All Solutions</strong></td>
             <td align='right'>
+                <span title='Unknown' class='badge card-prio-unknown' style='padding:15px;text-align:center;width:40px;"; $Output += "'>$($UnknownCount)</span>
+                <span title='Ok' class='badge card-prio-ok' style='padding:15px;text-align:center;width:40px;"; $Output += "'>$($OKCount)</span>
                 <span title='Informational' class='badge card-prio-info' style='padding:15px;text-align:center;width:40px;"; $Output += "'>$($InformationalCount)</span>
                 <span title='Low' class='badge card-prio-low' style='padding:15px;text-align:center;width:40px;"; $Output += "'>$($LowCount)</span>
                 <span title='Medium' class='badge card-prio-medium' style='padding:15px;text-align:center;width:40px;"; $Output += "'>$($MediumCount)</span>
@@ -628,6 +689,8 @@ function Get-M365SATHTMLReport
 		$Medium = 0
 		$Low = 0
 		$Info = 0
+        $Ok = 0
+        $Unknown = 0
 		
 		$Products = $(foreach ($Product in $object.Findings) { $Product | Where-Object { $_.ProductFamily -eq $Productfamily } })
 		foreach ($Prod in $Products)
@@ -652,6 +715,14 @@ function Get-M365SATHTMLReport
 			{
 				$Info++
 			}
+            elseif ($Prod.RiskRating -eq "None")
+            {
+                $Ok++
+            }
+            elseif ($Prod.RiskRating -eq "UNKNOWN")
+            {
+                $Unknown++
+            }
 			else
 			{
 				continue
@@ -663,6 +734,10 @@ function Get-M365SATHTMLReport
                 <td width='20'>
                 <td style='vertical-align:middle;'><img src='$($Icons[$i])' style='width: 16px; height: 16px' title='$($Productfamily)'>&nbsp;&nbsp; <a href='`#$($Productfamily.Replace(" ", "_"))'>$($Productfamily)</a></td>
                 <td align='right' style='vertical-align:middle;'>
+                <span class='badge card-prio-unknown' style='padding:10px;text-align:center;width:30px;";
+		$Output += "'>$($Unknown)</span>                  
+                <span class='badge card-prio-ok' style='padding:10px;text-align:center;width:30px;";
+		$Output += "'>$($Ok)</span>        
                 <span class='badge card-prio-info' style='padding:10px;text-align:center;width:30px;";
 		$Output += "'>$($Info)</span>
                 <span class='badge card-prio-low' style='padding:10px;text-align:center;width:30px;";
@@ -713,7 +788,7 @@ function Get-M365SATHTMLReport
 	
 	ForEach ($Productfamily in $ProductFamilies)
 	{
-		$Products = $(foreach ($Product in $object.Findings) { $Product | Where-Object { $_.ProductFamily -eq $Productfamily } }) | Sort-Object -Descending { Switch -Regex ($_.RiskRating) { 'Informational' { 1 }	'Low' { 2 }	'Medium' { 3 }	'High' { 4 }	'Critical' { 5 } }; $_.RiskScore},{$_.RiskScore}
+		$Products = $(foreach ($Product in $object.Findings) { $Product | Where-Object { $_.ProductFamily -eq $Productfamily } }) | Sort-Object -Descending { Switch -Regex ($_.RiskRating) { 'None' { 1 } 'Informational' { 2 }	'Low' { 3 }	'Medium' { 4 }	'High' { 5 } 'Critical' { 6 } 'UNKNOWN' { 7 } }; $_.RiskScore},{$_.RiskScore}
 		#$Products = $(foreach ($Product in $object.Findings) { $Product | ? { $_.ProductFamily -eq $Productfamily } }) | Sort-Object -Property {[decimal]$_.CVS}
 		$CollapseId = $($Productfamily).Replace(" ", "_")
 		$Output += "<a name='$($Productfamily)'></a> 
@@ -734,7 +809,6 @@ function Get-M365SATHTMLReport
 				$BadgeName = "Informational"
 				$Icon = "fa-solid fa-circle-info"
 				$IconColor = "#2986CC"
-				$Title = $Check.PassText
 			}
 			ElseIf ($Result.RiskRating -eq "Low")
 			{
@@ -743,7 +817,6 @@ function Get-M365SATHTMLReport
 				$BadgeName = "Low"
 				$Icon = "fa-solid fa-circle-question"
 				$IconColor = "#38761D"
-				$Title = $Check.PassText
 			}
 			ElseIf ($Result.RiskRating -eq "Medium")
 			{
@@ -752,7 +825,6 @@ function Get-M365SATHTMLReport
 				$BadgeName = "Medium"
 				$Icon = "fa-solid fa-circle-radiation"
 				$IconColor = "#FFC107"
-				$Title = $Check.FailRecommendation
 			}
 			ElseIf ($Result.RiskRating -eq "High")
 			{
@@ -761,21 +833,34 @@ function Get-M365SATHTMLReport
 				$BadgeName = "High"
 				$Icon = "fa-solid fa-circle-xmark"
 				$IconColor = "#FF1100"
-				$Title = $Check.FailRecommendation
 			}
-			Else
+			ElseIf ($Result.RiskRating -eq "Critical")
 			{
 				$CalloutType = "bd-callout-critical"
 				$BadgeType = "card-prio-critical"
 				$BadgeName = "Critical"
 				$Icon = "fa-solid fa-circle-exclamation"
 				$IconColor = "#660000"
-				$Title = $Check.FailRecommendation
 			}
+            elseif ($Result.RiskRating -eq "None") {
+                $CalloutType = "bd-callout-ok"
+				$BadgeType = "card-prio-ok"
+				$BadgeName = "Pass"
+				$Icon = "fa-solid fa-circle-check"
+				$IconColor = "#4DFA5B"
+            }
+            else
+            {
+                $CalloutType = "bd-callout-unknown"
+				$BadgeType = "card-prio-unknown"
+				$BadgeName = "Unknown"
+				$Icon = "fa-solid fa-circle-question"
+				$IconColor = "#C5C5C5"
+            }
 			#Write Collapse Object that contains the info
 			$Output += "        
                     <div class='accordion' id='$($ProductFamily)_Acd'>
-                    <button class='accordion-button btn-align-left collapsed' type='button' id='$($Result.ID)' data-bs-toggle='collapse' data-bs-target='#$($Result.ID)_body' aria-expanded='false' aria-controls='$($Result.ID)_body'><span class='badge $($BadgeType)'>$($BadgeName)</span><h6>[$($Result.RiskScore)]: $($Result.FindingName)</h6></button></div> 
+                    <button class='accordion-button btn-align-left collapsed' type='button' id='$($Result.ID)' data-bs-toggle='collapse' data-bs-target='#$($Result.ID)_body' aria-expanded='false' aria-controls='$($Result.ID)_body'><span class='badge $($BadgeType)'>$($BadgeName)</span><h6>[$($Result.RiskScore)]: $($Result.Title)</h6></button></div> 
                     "
 			#Start of Container Generation Within group object (FindingName)
 			$Output += "  
@@ -784,7 +869,7 @@ function Get-M365SATHTMLReport
                             <div class='container-fluid'>
                                 <div class='header-bar'>
                                     <div><i class='$($Icon)' color='$($IconColor)'></i></div>
-                                    <div class='col-8'><h6>$($Result.FindingName)</h6></div>
+                                    <div class='col-8'><h6>$($Result.Title)</h6></div>
                                    
                                 </div>"
 			$i++
@@ -797,18 +882,26 @@ function Get-M365SATHTMLReport
                             <div><b>Description:</b><p>$($Result.Description)</p></div>
 
                                 </div>"
-			
+
+			#Impact is now descriptive text
+            $Output += "<div class='row p-3'>
+                                <div><b>Impact:</b><p>$($Result.Impact)</p></div>
+    
+                    </div>"           
+
 			# Remediation Explanation
 			$Output += "<div class='row p-3'>
                             <div><b>Remediation:</b><p>$($Result.Remediation)</p></div>
 
                     </div>"
 			
-			# PowerShellScript
+			# PowerShellScript will be fixed in a later stadium
+            <#
 			$Output += "<div class='row p-3'>
                             <div><b>PowerShell Script:</b><p><pre><code class='language-powershell'>$($Result.PowershellScript)</code></pre></p></div>
 
                                 </div>"
+            #>
 			
 			#Table information that should contain default value, expected value, returned value
 			# We should expand the results by showing a table of Config Data and Items
@@ -863,25 +956,19 @@ function Get-M365SATHTMLReport
             
             $Output += "</div>"
 			
-			# RiskRating Explanation
+			# Status Display
 			$Output += "<div class='row p-3'>
-                            <div><b>Impact:</b><p>$($Result.Impact)</p></div>
+                            <div><b>Status:</b><p>$($Result.Status)</p></div>
 
                     </div>"
 			
-			# Likelihood Explanation
+			# RiskScore Explanation
 			$Output += "<div class='row p-3'>
-                            <div><b>Likelihood:</b><p>$($Result.Likelihood)</p></div>
+                            <div><b>RiskScore:</b><p>$($Result.RiskScore)</p></div>
 
                     </div>"
 			
-			# Likelihood Explanation
-			$Output += "<div class='row p-3'>
-                            <div><b>Priority:</b><p>$($Result.Priority)</p></div>
-
-                    </div>"
-			
-			# Impact Score
+			# RiskRating Score
 			$Output += "
                             <div>
                             <b>RiskRating:</b>
@@ -896,7 +983,7 @@ function Get-M365SATHTMLReport
 			Foreach ($Reference in $Result.References)
 			{
 				$Output += "
-                                    <div><i class='fas fa-external-link-square-alt'></i>&nbsp;<a href='$($Reference.URL)' target=""blank"">$($Reference.Name)</a></div>"
+                                    <div><i class='fa-solid fa-square-up-right'></i>&nbsp;<a href='$($Reference.URL)' target=""blank"">$($Reference.Name)</a></div>"
 			}
 			
             <#
@@ -957,7 +1044,7 @@ function Get-M365SATHTMLReport
                 <button class='btn btn-primary' onClick='collapse();'>Collapse All</button>
             </div> 
             </main>
-            <center>Found a bug? Report it! <a href='https://github.com/karmakstylez/M365SAT'>GitHub</a></center>
+            <center>Found a bug? Report it! <a href='https://github.com/Karmakstylez/M365SAT'>GitHub</a></center>
             </div>
             <div class='alert alert-success pt-2' >
             <center>Like this report? Try similar reporting for Microsoft's Compliance solutions. Download <a href='https://aka.ms/orca-mcca-github' target='_blank'> Microsoft Compliance Config Analyzer (MCCA)</a></center>
